@@ -1,0 +1,165 @@
+# Git Configuration File (.gitconfig)
+# A comprehensive Git setup with useful aliases and settings
+
+# ========== IDENTITY ==========
+# Your identity is used for commit authorship information.
+# Replace with your actual personal details
+[user]
+    name = Andrea Moccia
+    email = andrea.moccia@gmail.com
+
+# ========== CREDENTIAL HELPERS ==========
+# This section configures how Git authenticates with remote repositories
+[credential "https://github.com"]
+    # Uses the GitHub CLI for authentication - very convenient!
+    # This allows you to use 'gh auth login' to authenticate once
+    # and have Git operations work seamlessly thereafter.
+    helper = !gh auth git-credential
+    
+    # Alternative credential helper (commented out)
+    # Uncomment to store credentials persistently (less secure but convenient)
+    # helper = store
+
+# ========== STANDARD CONFIGURATION ==========
+[core]
+    # Sets your preferred text editor for commit messages, interactive rebasing, etc.
+    # Neovim is used here, but you could use 'code --wait' for VS Code, 'vim', etc.
+    editor = nvim
+    
+    # Path to your global gitignore file - patterns here will be
+    # ignored in ALL repositories (great for OS files, editor temps, etc.)
+    excludesfile = ~/.gitignore_global
+    
+    # Delta provides enhanced diff output with syntax highlighting
+    # If delta is not installed, Git will fall back to standard pager
+    pager = delta
+
+[init]
+    # Sets the default branch name when creating new repositories
+    # 'main' is now the standard default rather than 'master'
+    defaultBranch = main
+
+[color]
+    # Enables colored output in the terminal - makes Git output more readable
+    ui = auto
+
+[pull]
+    # Controls how 'git pull' behaves when integrating remote changes
+    # false = merge (creates merge commits, safer for beginners)
+    # true = rebase (cleaner history but requires more Git knowledge)
+    # only = only allow fast-forward pulls
+    rebase = false
+
+[push]
+    # Controls which branches are pushed when you run 'git push'
+    # simple = push only the current branch to its upstream branch
+    default = simple
+    
+    # When pushing a branch for the first time, automatically set up tracking
+    # This eliminates the need for '--set-upstream' or '-u' flags
+    autoSetupRemote = true
+
+[merge]
+    # How merge conflicts are displayed in the code
+    # diff3 = shows the original content alongside both sets of changes
+    # This makes it easier to resolve complex merge conflicts
+    conflictstyle = diff3
+
+[diff]
+    # Enhances diff readability by better highlighting moved lines of code
+    # Helps distinguish between lines that were moved vs. changed
+    colorMoved = default
+
+[interactive]
+    # Use delta to make interactive commands like 'git add -p' more readable
+    diffFilter = delta --color-only
+
+[delta]
+    # Delta configuration - a modern replacement for the standard Git pager
+    # https://github.com/dandavison/delta
+    navigate = true      # Use n/N to navigate between diff sections
+    light = false        # Set to true for light terminal backgrounds
+    side-by-side = true  # Show diffs side by side (easier to read)
+    line-numbers = true  # Show line numbers in diffs
+
+[alias]
+    # ========== COMMON COMMAND SHORTCUTS ==========
+    # These aliases save typing for frequent commands
+    
+    # Shortened versions of common commands
+    st = status          # Quick check of working tree status
+    ci = commit          # Create a new commit
+    co = checkout        # Switch branches or restore files
+    br = branch          # List, create, or delete branches
+    sw = switch          # Modern way to switch branches (Git 2.23+)
+    
+    # ========== ENHANCED LOGGING ==========
+    # Better formatted logs that show more useful information
+    
+    # Compact, graphical view of commit history with colors
+    # Great for understanding branch structure and history
+    lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    
+    # Detailed log with file changes for each commit
+    # Shows which files changed and by how much
+    ll = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --numstat
+    
+    # ========== WORKFLOW SHORTCUTS ==========
+    # Aliases that simplify common Git workflows
+    
+    # Unstage files - remove from staging area but keep changes
+    unstage = reset HEAD --
+    
+    # Show the latest commit details
+    last = log -1 HEAD
+    
+    # Open the graphical Git history browser
+    visual = !gitk
+    
+    # Modify the last commit (add files or change message)
+    amend = commit --amend
+    
+    # ========== SEARCH COMMANDS ==========
+    # Tools to find specific commits
+    
+    # Find commits by searching commit messages
+    # Usage: git findmsg "search term"
+    findmsg = "!f() { git log --pretty=format:'%C(yellow)%h  %Cblue%ad  %Creset%s%Cgreen  [%cn] %Cred%d' --decorate --date=short --grep=$1; }; f"
+    
+    # Find commits that added or removed specific code
+    # Usage: git findcode "function_name"
+    findcode = "!f() { git log --pretty=format:'%C(yellow)%h  %Cblue%ad  %Creset%s%Cgreen  [%cn] %Cred%d' --decorate --date=short -S$1; }; f"
+    
+    # ========== BRANCH MANAGEMENT ==========
+    # Tools for better branch organization
+    
+    # Show branches sorted by most recent commit
+    # Helps identify active vs. stale branches
+    recent-branches = "!git for-each-ref --sort='-committerdate' --format='%(refname)%09%(committerdate)' refs/heads | sed -e 's-refs/heads/--'"
+    
+    # Safely delete branches that have been fully merged
+    # Helps keep your branch list clean
+    clean-branches = "!git branch --merged | grep -v \\* | xargs git branch -d"
+    
+    # ========== IDENTITY CHECK ==========
+    # Show current Git identity
+    # Useful to verify your username and email before committing
+    whoami = "!echo 'Current Git identity: ' && git config user.name && git config user.email"
+    
+    # ========== GITHUB CLI INTEGRATION ==========
+    # Shortcut aliases for GitHub CLI commands
+    
+    # Open the current repository in your web browser
+    browse = "!gh repo view --web"
+    
+    # Create a new pull request
+    pr = "!gh pr create"
+    
+    # List open pull requests
+    prs = "!gh pr list"
+    
+    # Create a new issue
+    issue = "!gh issue create"
+    
+    # List open issues
+    issues = "!gh issue list"
