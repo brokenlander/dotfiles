@@ -12,7 +12,14 @@ opt.smartcase = true --unless mixed cases are usedi
 opt.cursorline = true
 opt.termguicolors = true
 opt.signcolumn = "yes" --show sign column so that text doesn't shift
-opt.clipboard:append("unnamedplus") --use system clipboard
+-- Use the system clipboard by default
+vim.opt.clipboard = "unnamedplus"
+
+-- Simple keymap for select all and copy
+vim.api.nvim_set_keymap("n", "<C-a>", 'ggVG"+y', { noremap = true, silent = true })
+
+--opt.clipboard:append("unnamedplus") --use system clipboard
+vim.opt.clipboard = "unnamed"
 opt.splitright = true
 opt.splitbelow = true
 

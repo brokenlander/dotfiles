@@ -72,3 +72,4 @@ vim.keymap.set(
 -- Map Ctrl+A to select all text and copy it
 vim.api.nvim_set_keymap("n", "<C-a>", 'ggVG"+y', { noremap = true })
 vim.api.nvim_set_keymap("v", "<C-a>", '<Esc>ggVG"+y', { noremap = true })
+
