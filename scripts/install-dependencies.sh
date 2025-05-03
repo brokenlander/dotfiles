@@ -1,10 +1,11 @@
 #!/bin/bash
 
+
 # Update package lists
 sudo apt update
 
 # Install zsh
-sudo apt install -y zsh
+sudo apt install -y zsh 
 
 # Install modern CLI replacements
 sudo apt install -y bat
@@ -18,6 +19,8 @@ sudo apt install -y git-delta
 sudo apt install -y tldr
 
 # Install neovim
+sudo add-apt-repository ppa:neovim-ppa/stable
+sudo apt update
 sudo apt install -y neovim
 
 # Install Git (latest version)
@@ -33,6 +36,13 @@ sudo apt install -y gh
 
 # Install Oh-My-ZSH
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+sleep 2
+
+# Install Micromamba
+sudo mkdir /opt/micromamba
+sudo chmod -R a+rw /opt/micromamba
+BIN_FOLDER="/opt/micromamba/bin" PREFIX_LOCATION="/opt/micromamba" INIT_YES="yes" CONDA_FORGE_YES="yes" ${SHELL} <(curl -L micro.mamba.pm/install.sh) < /dev/null
+
 
 # Install ZSH plugins
 git clone https://github.com/zsh-users/zsh-autosuggestions.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
@@ -40,4 +50,4 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:
 git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fast-syntax-highlighting
 
 # Set ZSH as default shell
-chsh -s $(which zsh)
+sudo chsh -s $(which zsh)

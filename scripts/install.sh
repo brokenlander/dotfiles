@@ -56,9 +56,9 @@ mkdir -p "$HOME/.dotfiles/zsh"
 # -------- ZSH Configuration (Non-destructive) --------
 echo "Setting up ZSH configuration..."
 
-# Copy ZSH module files to the dotfiles directory
-cp "$DOTFILES/zsh/aliases.zsh" "$HOME/.dotfiles/zsh/"
-cp "$DOTFILES/zsh/key-bindings.zsh" "$HOME/.dotfiles/zsh/"
+# Create symlinks for ZSH module files
+create_symlink "$DOTFILES/zsh/aliases.zsh" "$HOME/.dotfiles/zsh/aliases.zsh"
+create_symlink "$DOTFILES/zsh/key-bindings.zsh" "$HOME/.dotfiles/zsh/key-bindings.zsh"
 
 # Backup the existing .zshrc
 backup_file "$HOME/.zshrc"
@@ -81,7 +81,7 @@ echo "Setting up Git configuration..."
 if [ -f "$DOTFILES/git/.gitconfig" ]; then
     echo "Found .gitconfig at $DOTFILES/git/.gitconfig"
     # Direct symlink creation - avoid using function for critical path
-    ln -sf "$DOTFILES/git/.gitconfig" "$HOME/.gitconfig"
+    create_symlink "$DOTFILES/git/.gitconfig" "$HOME/.gitconfig"
     echo -e "${GREEN}Linked${NC} $DOTFILES/git/.gitconfig to $HOME/.gitconfig"
 else
     echo -e "${RED}Error:${NC} $DOTFILES/git/.gitconfig not found!"
@@ -89,8 +89,7 @@ fi
 
 if [ -f "$DOTFILES/git/.gitignore_global" ]; then
     echo "Found .gitignore_global at $DOTFILES/git/.gitignore_global"
-    # Direct symlink creation - avoid using function for critical path
-    ln -sf "$DOTFILES/git/.gitignore_global" "$HOME/.gitignore_global"
+    create_symlink "$DOTFILES/git/.gitignore_global" "$HOME/.gitignore_global"
     echo -e "${GREEN}Linked${NC} $DOTFILES/git/.gitignore_global to $HOME/.gitignore_global"
 else
     echo -e "${RED}Error:${NC} $DOTFILES/git/.gitignore_global not found!"
@@ -139,3 +138,17 @@ fi
 
 echo -e "\n${GREEN}Installation complete!${NC}"
 echo "Restart your terminal or run 'source ~/.zshrc' to apply changes."
+
+# -------- Neovim Configuration --------
+echo "Setting up Neovim configuration..."
+
+if [ -d "$DOTFILES/nvim" ]; then
+    echo "Found Neovim configuration at $DOTFILES/nvim"
+    
+    # Create symlink for the entire nvim directory
+    create_symlink "$DOTFILES/nvim" "$HOME/.config/nvim"
+    
+    echo -e "${GREEN}Linked${NC} Neovim configuration from $DOTFILES/nvim to $HOME/.config/nvim"
+else
+    echo -e "${RED}Error:${NC} $DOTFILES/nvim directory not found!"
+fi

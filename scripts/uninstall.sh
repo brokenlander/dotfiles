@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Terminal Configuration Uninstallation Script
 # ----------------------------------------
 
@@ -36,29 +35,74 @@ restore_file() {
 restore_file "$HOME/.gitconfig"
 restore_file "$HOME/.gitignore_global"
 
-# Clean up added source lines from .zshrc
+# Remove Neovim configuration symlink
+if [ -L "$HOME/.config/nvim" ]; then
+    rm "$HOME/.config/nvim"
+    echo -e "${YELLOW}Removed Neovim symlink${NC} $HOME/.config/nvim"
+    
+    # Restore from backup if available
+    if [ -d "$BACKUP_DIR/nvim" ]; then
+        mkdir -p "$HOME/.config"
+        cp -r "$BACKUP_DIR/nvim" "$HOME/.config/"
+        echo -e "${GREEN}Restored${NC} Neovim configuration from backup"
+    fi
+fi
+
+# Clean up added source lines and configurations from .zshrc
 if [ -f "$HOME/.zshrc" ]; then
     echo "Cleaning up .zshrc..."
     
     # Create a temporary file
     TEMP_FILE=$(mktemp)
     
-    # Filter out lines added by the installer
-    grep -v "# Added by dotfiles installer" "$HOME/.zshrc" | \
-    grep -v "source \$HOME/.dotfiles/zsh/aliases.zsh" | \
-    grep -v "source \$HOME/.dotfiles/zsh/key-binding.zsh" > "$TEMP_FILE"
+    # Filter out lines added by various installers
+    sed '/# Added by dotfiles installer/d; 
+         /source \$HOME\/.dotfiles\/zsh\/aliases.zsh/d; 
+         /source \$HOME\/.dotfiles\/zsh\/key-bindings.zsh/d; 
+         /source \$ZSH\/oh-my-zsh.sh/d;
+         /# >>> mamba initialize >>>/,/# <<< mamba initialize <<</d' "$HOME/.zshrc" > "$TEMP_FILE"
     
     # Replace original file
     cp "$TEMP_FILE" "$HOME/.zshrc"
     rm "$TEMP_FILE"
     
-    echo -e "${GREEN}Removed${NC} dotfiles-specific lines from .zshrc"
+    echo -e "${GREEN}Removed${NC} dotfiles-specific lines and configurations from .zshrc"
+fi
+
+# Remove ZSH configuration symlinks
+if [ -L "$HOME/.dotfiles/zsh/aliases.zsh" ]; then
+    rm "$HOME/.dotfiles/zsh/aliases.zsh"
+    echo -e "${YELLOW}Removed symlink${NC} $HOME/.dotfiles/zsh/aliases.zsh"
+fi
+
+if [ -L "$HOME/.dotfiles/zsh/key-bindings.zsh" ]; then
+    rm "$HOME/.dotfiles/zsh/key-bindings.zsh"
+    echo -e "${YELLOW}Removed symlink${NC} $HOME/.dotfiles/zsh/key-bindings.zsh"
 fi
 
 # Remove modular configuration directory
 if [ -d "$HOME/.dotfiles" ]; then
     rm -rf "$HOME/.dotfiles"
     echo -e "${YELLOW}Removed${NC} $HOME/.dotfiles directory"
+fi
+
+# Restore .zshrc from backup if it exists
+if [ -f "$BACKUP_DIR/.zshrc" ]; then
+    cp "$BACKUP_DIR/.zshrc" "$HOME/.zshrc"
+    echo -e "${GREEN}Restored${NC} original .zshrc from backup"
+fi
+
+# Remove micromamba from /opt
+if [ -d "/opt/micromamba" ]; then
+    echo "Removing micromamba installation..."
+    sudo rm -rf /opt/micromamba
+    echo -e "${YELLOW}Removed${NC} micromamba installation from /opt/micromamba"
+fi
+
+# Remove Oh-My-Zsh
+if [ -d "$HOME/.oh-my-zsh" ]; then
+    rm -rf "$HOME/.oh-my-zsh"
+    echo -e "${YELLOW}Removed${NC} Oh-My-Zsh from $HOME/.oh-my-zsh"
 fi
 
 echo -e "\n${GREEN}Uninstallation complete!${NC}"
