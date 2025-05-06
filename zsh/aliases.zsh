@@ -32,3 +32,6 @@ alias diff='delta'
 
 # tldr (simplified man pages)
 alias man='tldr'
+
+# cd to forge
+alias cdf='cd forge'
