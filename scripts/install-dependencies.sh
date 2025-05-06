@@ -69,6 +69,9 @@ sudo apt install -y gh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 sleep 2
 
+# Zoxide
+zoxide init zsh
+
 # Install Micromamba
 sudo mkdir /opt/micromamba
 sudo chmod -R a+rw /opt/micromamba
