@@ -38,3 +38,6 @@ alias cdf='cd forge'
 
 # micromamba
 alias mm='micromamba'
+
+# neovim
+alias vim='nvim'
