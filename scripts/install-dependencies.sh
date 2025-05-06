@@ -72,9 +72,19 @@ sleep 2
 # Install Micromamba
 sudo mkdir /opt/micromamba
 sudo chmod -R a+rw /opt/micromamba
-BIN_FOLDER="/opt/micromamba/bin" PREFIX_LOCATION="/opt/micromamba" INIT_YES="yes" CONDA_FORGE_YES="yes" ${SHELL} <(curl -L micro.mamba.pm/install.sh) < /dev/null
+BIN_FOLDER=" ${HOME}/micromamba/bin" PREFIX_LOCATION=" ${HOME}/micromamba" INIT_YES="yes" CONDA_FORGE_YES="yes" ${SHELL} <(curl -L micro.mamba.pm/install.sh) < /dev/null
 
 # Install ZSH plugins
 git clone https://github.com/zsh-users/zsh-autosuggestions.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fast-syntax-highlighting
+
+# Create Forge
+mkdir -p forge
+cat >> ~/.zshrc << 'EOL'
+
+# Set forge as default directory
+if [[ "$PWD" == "$HOME" && -z "$NVIM_SESSION" ]]; then
+  cd ~/forge
+fi
+EOL
