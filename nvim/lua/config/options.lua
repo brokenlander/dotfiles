@@ -12,6 +12,8 @@ opt.smartcase = true --unless mixed cases are usedi
 opt.cursorline = true
 opt.termguicolors = true
 opt.signcolumn = "yes" --show sign column so that text doesn't shift
+opt.fillchars = vim.opt.fillchars + "eob: "
+opt.fillchars = opt.fillchars + "eob: "
 -- Use the system clipboard by default
 vim.opt.clipboard = "unnamedplus"
 
