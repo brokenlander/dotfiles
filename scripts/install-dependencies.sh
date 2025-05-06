@@ -6,7 +6,14 @@ sudo apt install -y build-essential
 sudo apt upgrade -y
 
 # General tools
-sudo apt install -y unzip curl fzf
+sudo apt install -y unzip curl fzf python3 pipx
+
+# pipx
+export PATH="$HOME/.local/bin:$PATH"
+pipx ensurepath
+pipx install pylint
+pipx install black
+pipx install isort
 
 # Install zsh
 sudo apt install -y zsh
