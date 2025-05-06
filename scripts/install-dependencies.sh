@@ -1,25 +1,36 @@
 #!/bin/bash
 
-
 # Update package lists
 sudo apt update
 
 # Install zsh
-sudo apt install -y zsh 
+sudo apt install -y zsh
+sudo chsh -s $(which zsh) $USER
 
 # Install modern CLI replacements
 sudo apt install -y bat
-sudo apt install -y exa
+sudo apt install -y eza
 sudo apt install -y fd-find
 sudo apt install -y ripgrep
-sudo apt install -y dust
-sudo apt install -y bottom
 sudo apt install -y zoxide
 sudo apt install -y git-delta
 sudo apt install -y tldr
 
+# Bottom
+curl -LO https://github.com/ClementTsang/bottom/releases/download/0.10.2/bottom_0.10.2-1_amd64.deb
+sudo dpkg -i bottom_0.10.2-1_amd64.deb
+rm bottom_0.10.2-1_amd64.deb
+
+# Dust
+wget https://github.com/bootandy/dust/releases/download/v1.1.1/dust-v1.1.1-x86_64-unknown-linux-gnu.tar.gz
+tar -xvf dust-v1.1.1-x86_64-unknown-linux-gnu.tar.gz
+sudo mv dust-v1.1.1-x86_64-unknown-linux-gnu/dust /usr/local/bin/
+sudo chmod +x /usr/local/bin/dust
+rm dust-v1.1.1-x86_64-unknown-linux-gnu.tar.gz
+rm -rf dust-v1.1.1-x86_64-unknown-linux-gnu
+
 # Install neovim
-sudo add-apt-repository ppa:neovim-ppa/stable
+sudo add-apt-repository -y ppa:neovim-ppa/unstable
 sudo apt update
 sudo apt install -y neovim
 
@@ -48,6 +59,3 @@ BIN_FOLDER="/opt/micromamba/bin" PREFIX_LOCATION="/opt/micromamba" INIT_YES="yes
 git clone https://github.com/zsh-users/zsh-autosuggestions.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fast-syntax-highlighting
-
-# Set ZSH as default shell
-sudo chsh -s $(which zsh)
