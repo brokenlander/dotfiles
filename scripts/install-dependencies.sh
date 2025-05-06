@@ -6,7 +6,10 @@ sudo apt install -y build-essential
 sudo apt upgrade -y
 
 # General tools
-sudo apt install -y unzip curl fzf python3 pipx
+sudo apt install -y curl fzf python3 pipx
+
+# Utilities
+sudo apt install -y unzip rclone tmux jq 
 
 # pipx
 export PATH="$HOME/.local/bin:$PATH"
@@ -28,6 +31,7 @@ sudo apt install -y ripgrep
 sudo apt install -y zoxide
 sudo apt install -y git-delta
 sudo apt install -y tldr
+sudo apt install -y duf
 
 # Bottom
 curl -LO https://github.com/ClementTsang/bottom/releases/download/0.10.2/bottom_0.10.2-1_amd64.deb
