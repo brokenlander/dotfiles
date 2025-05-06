@@ -71,10 +71,10 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 sleep 2
 
 # Install Micromamba
-INIT_YES="yes" CONDA_FORGE_YES="yes" ${SHELL} <(curl -L micro.mamba.pm/install.sh) < /dev/null
+INIT_YES="yes" CONDA_FORGE_YES="yes" ~/.zshrc <(curl -L micro.mamba.pm/install.sh) < /dev/null
 
 # NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+PROFILE=~/.zshrc curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 
 # Zoxide
 echo 'eval "$(zoxide init zsh)"' >> ~/.zshrc
