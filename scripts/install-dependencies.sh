@@ -3,14 +3,15 @@
 # Update package lists
 sudo apt update
 sudo apt install -y build-essential
-sudo apt upgrade
+sudo apt upgrade -y
 
 # General tools
-sudo apt install -y unzip curl kubectl fzf
+sudo apt install -y unzip curl fzf
 
 # Install zsh
 sudo apt install -y zsh
-sudo chsh -s $(which zsh) $USER
+sudo usermod -s $(which zsh) "$USER"
+touch /home/$USER/.zshrc
 
 # Install modern CLI replacements
 sudo apt install -y bat
@@ -70,9 +71,7 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 sleep 2
 
 # Install Micromamba
-sudo mkdir /opt/micromamba
-sudo chmod -R a+rw /opt/micromamba
-BIN_FOLDER=" ${HOME}/micromamba/bin" PREFIX_LOCATION=" ${HOME}/micromamba" INIT_YES="yes" CONDA_FORGE_YES="yes" ${SHELL} <(curl -L micro.mamba.pm/install.sh) < /dev/null
+INIT_YES="yes" CONDA_FORGE_YES="yes" ${SHELL} <(curl -L micro.mamba.pm/install.sh) < /dev/null
 
 # NVM
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
