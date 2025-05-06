@@ -71,7 +71,10 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 sleep 2
 
 # Install Micromamba
-INIT_YES="yes" CONDA_FORGE_YES="yes" ~/.zshrc <(curl -L micro.mamba.pm/install.sh) < /dev/null
+INIT_YES="yes" CONDA_FORGE_YES="yes" bash <(curl -L micro.mamba.pm/install.sh) < /dev/null
+export PATH="$HOME/.local/bin:$PATH"
+"$HOME/.local/bin/micromamba" shell init --shell zsh --root-prefix ~/micromamba
+
 
 # NVM
 PROFILE=~/.zshrc curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
