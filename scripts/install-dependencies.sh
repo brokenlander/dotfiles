@@ -15,6 +15,7 @@ sudo apt install -y ripgrep
 sudo apt install -y zoxide
 sudo apt install -y git-delta
 sudo apt install -y tldr
+sudo apt install -y kubectl
 
 # Bottom
 curl -LO https://github.com/ClementTsang/bottom/releases/download/0.10.2/bottom_0.10.2-1_amd64.deb
