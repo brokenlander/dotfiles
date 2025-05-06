@@ -11,9 +11,9 @@ return {
 			"NvimTreeCollapse",
 		},
 		keys = {
-			{ "<leader>ee", "<cmd>NvimTreeToggle<CR>", desc = "Toggle NvimTree" },
-			{ "<leader>er", "<cmd>NvimTreeFocus<CR>", desc = "Focus NvimTree" },
-			{ "<leader>ef", "<cmd>NvimTreeFindFileToggle<CR>", desc = "Toggle NvimTree" },
+			{ "<leader>ee", "<cmd>NvimTreeToggle<CR>", desc = "Explore NvimTree" },
+			{ "<leader>er", "<cmd>NvimTreeFocus<CR>", desc = "Explore Return NvimTree" },
+			{ "<leader>ef", "<cmd>NvimTreeFindFileToggle<CR>", desc = "Explore Find NvimTree" },
 		},
 		config = function()
 			-- Disable netrw
