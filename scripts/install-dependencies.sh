@@ -2,6 +2,11 @@
 
 # Update package lists
 sudo apt update
+sudo apt install -y build-essential
+sudo apt upgrade
+
+# General tools
+sudo apt install -y unzip curl kubectl fzf
 
 # Install zsh
 sudo apt install -y zsh
@@ -15,7 +20,6 @@ sudo apt install -y ripgrep
 sudo apt install -y zoxide
 sudo apt install -y git-delta
 sudo apt install -y tldr
-sudo apt install -y kubectl
 
 # Bottom
 curl -LO https://github.com/ClementTsang/bottom/releases/download/0.10.2/bottom_0.10.2-1_amd64.deb
