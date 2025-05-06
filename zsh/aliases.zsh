@@ -35,3 +35,6 @@ alias man='tldr'
 
 # cd to forge
 alias cdf='cd forge'
+
+# micromamba
+alias mm='micromamba'
