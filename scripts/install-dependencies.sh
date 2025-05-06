@@ -69,13 +69,16 @@ sudo apt install -y gh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 sleep 2
 
-# Zoxide
-zoxide init zsh
-
 # Install Micromamba
 sudo mkdir /opt/micromamba
 sudo chmod -R a+rw /opt/micromamba
 BIN_FOLDER=" ${HOME}/micromamba/bin" PREFIX_LOCATION=" ${HOME}/micromamba" INIT_YES="yes" CONDA_FORGE_YES="yes" ${SHELL} <(curl -L micro.mamba.pm/install.sh) < /dev/null
+
+# NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+# Zoxide
+echo 'eval "$(zoxide init zsh)"' >> ~/.zshrc
 
 # Install ZSH plugins
 git clone https://github.com/zsh-users/zsh-autosuggestions.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
