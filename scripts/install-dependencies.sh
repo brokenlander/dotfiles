@@ -6,7 +6,7 @@ sudo apt install -y build-essential
 sudo apt upgrade -y
 
 # General tools
-sudo apt install -y curl fzf python3 pipx yarn
+sudo apt install -y curl fzf python3 pipx yarn xclip xsel
 
 # Utilities
 sudo apt install -y unzip rclone tmux jq 
