@@ -152,3 +152,5 @@ if [ -d "$DOTFILES/nvim" ]; then
 else
     echo -e "${RED}Error:${NC} $DOTFILES/nvim directory not found!"
 fi
+
+nvim --headless "+Lazy sync" "+MasonUpdate" +qa > /dev/null 2>&1
