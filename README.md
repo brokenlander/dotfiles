@@ -28,9 +28,6 @@ The installation is a two-step process:
 First, install all required software and tools:
 
 ```bash
-# Make the script executable
-chmod +x scripts/install-dependencies.sh
-
 # Run the dependencies installer
 ./scripts/install-dependencies.sh
 ```
@@ -38,21 +35,22 @@ chmod +x scripts/install-dependencies.sh
 This script installs:
 
 - ZSH shell
+- System utilities and common packages
 - Modern CLI replacements (bat, exa, fd-find, ripgrep, etc.)
 - Neovim
 - Git (latest version)
 - GitHub CLI
 - Oh-My-ZSH and plugins
 - Micromamba in `/opt/micromamba` with read/write access for all users
+- Nvm
+
+It also does a full update/upgrade
 
 ### 2. Install Configuration
 
 After the dependencies are installed, set up your configuration files:
 
 ```bash
-# Make the script executable
-chmod +x scripts/install.sh
-
 # Run the installation script
 ./scripts/install.sh
 ```
