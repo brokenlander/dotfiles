@@ -89,6 +89,8 @@ export PATH="$HOME/.local/bin:$PATH"
 
 # NVM
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | PROFILE=~/.zshrc bash
+nvm install --lts
+nvm use --lts
 
 # Zoxide
 echo 'eval "$(zoxide init zsh)"' >> ~/.zshrc
