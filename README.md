@@ -8,7 +8,7 @@ git clone https://github.com/brokenlander/dotfiles.git
 dotfiles/scripts/install-dependencies.sh
 zsh
 ../dotfiles/scripts/install.sh
-rm ~/.dotfiles_backup -dr # Removes backups
+rm ~/.dotfiles_backup -dr # Remove backups
 ```
 
 ## What's Included
