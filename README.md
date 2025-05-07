@@ -5,19 +5,25 @@ A comprehensive collection of terminal configuration files and settings for a pr
 ```bash
 # Installation
 git clone https://github.com/brokenlander/dotfiles.git
-dotfiles/scripts/install-dependencies.sh
+cd dotfiles
+./scripts/install-dependencies.sh
+# Start a new ZSH shell
 zsh
-../dotfiles/scripts/install.sh
-rm ~/.dotfiles_backup -dr # Remove backups
+./scripts/install.sh
+# Optional: Remove backups if everything works properly
+rm ~/.dotfiles_backup -dr
 ```
 
 ## What's Included
 
-- **ZSH Configuration**: Custom settings, aliases, key bindings, and plugins
+- **ZSH Configuration**: Custom settings, aliases, and plugins
 - **Git Configuration**: Enhanced settings, aliases, and multi-account support
 - **Neovim Configuration**: Custom setup for the modern text editor
-- **Modern CLI Tools**: Setup for replacements like bat, eza, fd, ripgrep, etc.
+- **Modern CLI Tools**: Setup for replacements like bat, eza, fd, ripgrep, dust, etc.
 - **Micromamba Integration**: Lightweight conda-compatible package manager
+- **Docker Configuration**: Docker and Docker Compose setup
+- **Python Development Tools**: pylint, black, and isort via pipx
+- **Node.js Environment**: NVM for Node.js version management
 
 ## Installation
 
@@ -34,17 +40,19 @@ First, install all required software and tools:
 
 This script installs:
 
-- ZSH shell
-- System utilities and common packages
-- Modern CLI replacements (bat, exa, fd-find, ripgrep, etc.)
-- Neovim
+- ZSH shell and sets it as the default shell
+- System utilities and common packages (curl, fzf, python3, pipx, yarn, unzip, rclone, tmux, jq)
+- Python development tools via pipx (pylint, black, isort)
+- Modern CLI replacements (bat, eza, fd-find, ripgrep, zoxide, delta, tldr, dust, bottom, duf)
+- Neovim (unstable/latest version)
 - Git (latest version)
+- Docker and Docker Compose
 - GitHub CLI
 - Oh-My-ZSH and plugins
-- Micromamba in `/opt/micromamba` with read/write access for all users
-- Nvm
+- Micromamba in the user's home directory
+- NVM with the latest LTS Node.js version
 
-It also does a full update/upgrade
+It also performs a full system update/upgrade
 
 ### 2. Install Configuration
 
@@ -62,10 +70,11 @@ The installation script:
 - Sets up Git configuration with useful aliases and settings
 - Configures Neovim with your custom setup
 - Configures plugins for Oh-My-ZSH
+- Updates Neovim plugins using Lazy and Mason package managers
 
 ## Modern CLI Tools
 
-This configuration uses several modern replacements for traditional command line tools:
+This configuration replaces traditional command line tools with modern alternatives for improved productivity:
 
 | Traditional | Modern Replacement | Description                             |
 | ----------- | ------------------ | --------------------------------------- |
@@ -74,10 +83,11 @@ This configuration uses several modern replacements for traditional command line
 | `find`      | `fd`               | Simpler syntax, respects .gitignore     |
 | `grep`      | `ripgrep`          | Faster, respects .gitignore             |
 | `du`        | `dust`             | More intuitive disk usage analyzer      |
-| `top`       | `bottom`/`btop`    | More interactive process viewer         |
+| `top`       | `bottom`/`btm`     | More interactive process viewer         |
 | `cd`        | `zoxide`           | Smarter directory navigation            |
 | `diff`      | `delta`            | Better diff with syntax highlighting    |
 | `man`       | `tldr`             | Simplified command examples             |
+| `df`        | `duf`              | Better disk usage visualization         |
 
 ## Components
 
@@ -126,28 +136,67 @@ This configuration uses Oh-My-ZSH with the following plugins:
 ### Micromamba
 
 - Lightweight conda-compatible package manager
-- Installed in `/opt/micromamba` with permissions for all users
+- Installed in the user's home directory (`~/micromamba`)
 - Configured to use conda-forge by default
+- Alias: `mm` for quick access
 
-## Custom Key Bindings
+### Docker
 
-- Italian keyboard tilde (`~`) access: `Alt+\`
-- Home key: Go to beginning of line
-- End key: Go to end of line
-- Delete key: Delete character under cursor
+- Docker and Docker Compose installation
+- Configured for current user access
+
+### Node.js
+
+- NVM (Node Version Manager) for managing Node.js versions
+- Latest LTS version of Node.js installed by default
+
+### Python Development
+
+- pipx for isolated Python application installation
+- Development tools:
+  - pylint for linting
+  - black for code formatting
+  - isort for import sorting
+
+## Custom Aliases
+
+The configuration includes aliases for all modern CLI tools:
+
+```bash
+# Modern CLI Tool Aliases
+alias bat='batcat'
+alias cat='batcat'
+alias ls='eza'
+alias ll='eza -la'
+alias la='eza -a'
+alias lt='eza -T'  # Tree view
+alias find='fd'
+alias fd='fdfind'
+alias grep='rg'
+alias du='dust'
+alias top='btm'
+alias cd='z'
+alias diff='delta'
+alias man='tldr'
+alias df='duf'
+alias mm='micromamba'  # Micromamba shortcut
+alias vim='nvim'  # Use neovim by default
+```
+
+
 
 ## Environment Management
 
-This configuration includes Micromamba for lightweight package and environment management. It's installed in `/opt/micromamba` with permissions set for all users to have read/write access.
+This configuration includes Micromamba for lightweight package and environment management. It's installed in your home directory with the `mm` alias for quick access.
 
 To create and activate environments:
 
 ```bash
 # Create a new environment with Python 3.12
-micromamba create -n py312 python=3.12 -c conda-forge
+mm create -n py312 python=3.12 -c conda-forge
 
 # Activate the environment
-micromamba activate py312
+mm activate py312
 ```
 
 ## Customization
@@ -174,7 +223,7 @@ This will:
 
 - Remove all symlinks created during installation
 - Remove the custom configuration lines from your .zshrc
-- Remove Micromamba from `/opt/micromamba`
+- Remove Micromamba from your home directory
 - Remove Oh-My-ZSH completely
 - Restore your original configuration files from backup when available
 - Clean up the ~/.dotfiles directory
