@@ -2,6 +2,15 @@
 
 A comprehensive collection of terminal configuration files and settings for a productive development environment.
 
+```bash
+# Installation
+git clone https://github.com/brokenlander/dotfiles.git
+dotfiles/scripts/install-dependencies.sh
+exit & login
+../dotfiles/scripts/install.sh
+rm ~/.dotfiles_backup -dr # Removes backups
+```
+
 ## What's Included
 
 - **ZSH Configuration**: Custom settings, aliases, key bindings, and plugins
