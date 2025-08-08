@@ -6,7 +6,7 @@ sudo apt install -y build-essential
 sudo apt upgrade -y
 
 # General tools
-sudo apt install -y curl fzf python3 pipx yarn xclip xsel
+sudo apt install -y curl fzf python3 pipx xclip xsel
 
 # Utilities
 sudo apt install -y unzip rclone tmux jq 
@@ -98,6 +98,7 @@ export NVM_DIR="$HOME/.nvm"
 # Install Node.js
 nvm install --lts
 nvm use --lts
+npm install --global yarn
 
 # Zoxide
 echo 'eval "$(zoxide init zsh)"' >> ~/.zshrc
