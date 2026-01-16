@@ -83,6 +83,13 @@ return {
 							},
 							transparent_background = false,
 							term_colors = true,
+							color_overrides = {
+								mocha = {
+									base = "#14111c",  -- Darker with more purple tint
+									mantle = "#100d18",  -- Slightly darker with purple
+									crust = "#0c0a13",  -- Darkest with purple
+								},
+							},
 							styles = {
 								comments = { "italic" },
 								conditionals = { "italic" },
@@ -200,8 +207,8 @@ return {
 			-- Set up keybinding for quick cycling
 			vim.keymap.set("n", "<leader>tt", _G.cycle_theme, { desc = "Cycle through themes" })
 
-			-- Initialize with default-enhanced theme
-			_G.set_theme("default-enhanced")
+			-- Initialize with catppuccin theme
+			_G.set_theme("catppuccin")
 		end,
 	},
 }
