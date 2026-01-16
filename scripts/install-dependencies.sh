@@ -117,7 +117,8 @@ if [ -f "$HOME/.local/bin/micromamba" ]; then
 else
     INIT_YES="yes" CONDA_FORGE_YES="yes" bash <(curl -L micro.mamba.pm/install.sh) < /dev/null
     export PATH="$HOME/.local/bin:$PATH"
-    "$HOME/.local/bin/micromamba" shell init --shell zsh --root-prefix ~/micromamba
+    # Note: Shell initialization is handled by zsh/integrations.zsh in the dotfiles
+    echo "Micromamba installed. Shell initialization will be configured by install.sh"
 fi
 
 # NVM

@@ -34,5 +34,13 @@ if command -v direnv &> /dev/null; then
     eval "$(direnv hook zsh)"
 fi
 
+# Micromamba - Lightweight conda package manager
+# This initializes the shell to properly use 'micromamba activate' commands
+if [ -f "$HOME/.local/bin/micromamba" ]; then
+    export MAMBA_ROOT_PREFIX="$HOME/micromamba"
+    export MAMBA_EXE="$HOME/.local/bin/micromamba"
+    eval "$("$MAMBA_EXE" shell hook --shell zsh)"
+fi
+
 # Disable git branch in prompt (keep git plugin for aliases)
 git_prompt_info() { }
