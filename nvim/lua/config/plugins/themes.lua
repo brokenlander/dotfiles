@@ -85,9 +85,9 @@ return {
 							term_colors = true,
 							color_overrides = {
 								mocha = {
-									base = "#14111c",  -- Darker with more purple tint
-									mantle = "#100d18",  -- Slightly darker with purple
-									crust = "#0c0a13",  -- Darkest with purple
+									base = "#0d0018",  -- Deep purple/magenta background
+									mantle = "#0a0014",  -- Slightly darker
+									crust = "#070010",  -- Darkest
 								},
 							},
 							styles = {
