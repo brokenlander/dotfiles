@@ -59,6 +59,7 @@ echo "Setting up ZSH configuration..."
 # Create symlinks for ZSH module files
 create_symlink "$DOTFILES/zsh/aliases.zsh" "$HOME/.dotfiles/zsh/aliases.zsh"
 create_symlink "$DOTFILES/zsh/key-bindings.zsh" "$HOME/.dotfiles/zsh/key-bindings.zsh"
+create_symlink "$DOTFILES/zsh/integrations.zsh" "$HOME/.dotfiles/zsh/integrations.zsh"
 
 # Backup the existing .zshrc
 backup_file "$HOME/.zshrc"
@@ -69,9 +70,16 @@ if ! grep -q "source \$HOME/.dotfiles/zsh/aliases.zsh" "$HOME/.zshrc" 2>/dev/nul
     echo "# Added by dotfiles installer" >> "$HOME/.zshrc"
     echo "source \$HOME/.dotfiles/zsh/aliases.zsh" >> "$HOME/.zshrc"
     echo "source \$HOME/.dotfiles/zsh/key-bindings.zsh" >> "$HOME/.zshrc"
+    echo "source \$HOME/.dotfiles/zsh/integrations.zsh" >> "$HOME/.zshrc"
     echo -e "${GREEN}Added${NC} source lines to ~/.zshrc"
 else
     echo -e "${YELLOW}Source lines already exist${NC} in ~/.zshrc"
+fi
+
+# Add source line for integrations if it doesn't exist (for existing installations)
+if ! grep -q "source \$HOME/.dotfiles/zsh/integrations.zsh" "$HOME/.zshrc" 2>/dev/null; then
+    echo "source \$HOME/.dotfiles/zsh/integrations.zsh" >> "$HOME/.zshrc"
+    echo -e "${GREEN}Added${NC} integrations source line to ~/.zshrc"
 fi
 
 # -------- Git Configuration (Replace) --------
@@ -93,6 +101,26 @@ if [ -f "$DOTFILES/git/.gitignore_global" ]; then
     echo -e "${GREEN}Linked${NC} $DOTFILES/git/.gitignore_global to $HOME/.gitignore_global"
 else
     echo -e "${RED}Error:${NC} $DOTFILES/git/.gitignore_global not found!"
+fi
+
+# -------- Tmux Configuration --------
+echo "Setting up Tmux configuration..."
+
+if [ -f "$DOTFILES/tmux/.tmux.conf" ]; then
+    echo "Found .tmux.conf at $DOTFILES/tmux/.tmux.conf"
+    create_symlink "$DOTFILES/tmux/.tmux.conf" "$HOME/.tmux.conf"
+    echo -e "${GREEN}Linked${NC} $DOTFILES/tmux/.tmux.conf to $HOME/.tmux.conf"
+
+    # Install tmux plugins via TPM
+    if [ -d "$HOME/.tmux/plugins/tpm" ]; then
+        echo "Installing tmux plugins..."
+        "$HOME/.tmux/plugins/tpm/bin/install_plugins"
+        echo -e "${GREEN}Tmux plugins installed${NC}"
+    else
+        echo -e "${YELLOW}Warning:${NC} TPM not found. Run install-dependencies.sh first."
+    fi
+else
+    echo -e "${RED}Error:${NC} $DOTFILES/tmux/.tmux.conf not found!"
 fi
 
 # -------- Oh-My-ZSH Setup --------
@@ -153,4 +181,4 @@ else
     echo -e "${RED}Error:${NC} $DOTFILES/nvim directory not found!"
 fi
 
-nvim --headless "+Lazy sync" "+MasonUpdate" +qa > /dev/null 2>&1
+nvim --headless "+Lazy! sync" +qa && nvim --headless "+MasonInstall basedpyright lua_ls" +qa && nvim --headless "+lua require('nvim-treesitter').install({'python','lua','markdown','markdown_inline','javascript','typescript','json','html','css','yaml','bash'}):wait(120000)" +qa

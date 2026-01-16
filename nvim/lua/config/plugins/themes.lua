@@ -18,11 +18,6 @@ return {
 		lazy = true,
 		priority = 1000,
 	},
-	{
-		"rebelot/kanagawa.nvim",
-		lazy = true,
-		priority = 1000,
-	},
 
 	-- Theme Manager attached to an existing plugin
 	{
@@ -113,29 +108,6 @@ return {
 					end,
 				},
 				{
-					name = "kanagawa",
-					setup = function()
-						require("kanagawa").setup({
-							compile = false,
-							undercurl = true,
-							commentStyle = { italic = true },
-							functionStyle = {},
-							keywordStyle = { italic = true },
-							statementStyle = { bold = true },
-							typeStyle = {},
-							transparent = false,
-							dimInactive = false,
-							terminalColors = true,
-							theme = "dragon", -- Changed from "wave" to "dragon"
-							background = {
-								dark = "dragon", -- Changed from "wave" to "dragon"
-								light = "lotus",
-							},
-						})
-						vim.cmd("colorscheme kanagawa")
-					end,
-				},
-				{
 					name = "default-enhanced",
 					setup = function()
 						-- Reset to default first
@@ -174,13 +146,6 @@ return {
 						for group, settings in pairs(highlights) do
 							vim.api.nvim_set_hl(0, group, settings)
 						end
-					end,
-				},
-				{
-					name = "default-basic",
-					setup = function()
-						-- Just set the default theme with no modifications
-						vim.cmd("colorscheme default")
 					end,
 				},
 			}
@@ -235,8 +200,8 @@ return {
 			-- Set up keybinding for quick cycling
 			vim.keymap.set("n", "<leader>tt", _G.cycle_theme, { desc = "Cycle through themes" })
 
-			-- Initialize with first theme
-			_G.set_theme("arctic")
+			-- Initialize with default-enhanced theme
+			_G.set_theme("default-enhanced")
 		end,
 	},
 }

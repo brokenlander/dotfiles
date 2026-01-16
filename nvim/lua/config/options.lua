@@ -1,4 +1,9 @@
 vim.cmd("let g:netrw_liststyle =3")
+
+-- Disable unused providers to remove warnings
+vim.g.loaded_ruby_provider = 0
+vim.g.loaded_perl_provider = 0
+
 local opt = vim.opt
 opt.nu = true --enable line numbers
 opt.relativenumber = true --relative line number
@@ -24,6 +29,25 @@ vim.api.nvim_set_keymap("n", "<C-a>", 'ggVG"+y', { noremap = true, silent = true
 vim.opt.clipboard = "unnamed"
 opt.splitright = true
 opt.splitbelow = true
+
+-- Auto-reload buffers when files change on disk
+opt.autoread = true -- Automatically read file when changed outside of Vim
+
+-- Trigger checktime when entering buffer, gaining focus, or after inactivity
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+	pattern = "*",
+	command = "checktime",
+	group = vim.api.nvim_create_augroup("AutoReload", { clear = true }),
+})
+
+-- Notify when file is reloaded
+vim.api.nvim_create_autocmd("FileChangedShellPost", {
+	pattern = "*",
+	callback = function()
+		vim.notify("File changed on disk. Buffer reloaded.", vim.log.levels.INFO)
+	end,
+	group = vim.api.nvim_create_augroup("AutoReloadNotify", { clear = true }),
+})
 
 -- Mouse configuration
 opt.mouse = "a" -- Enable mouse in all modes
@@ -75,3 +99,13 @@ for type, icon in pairs(signs) do
 	local hl = "DiagnosticSign" .. type
 	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
 end
+
+-- Fix MobaXterm rendering glitch: icons appear garbled on startup until first keypress.
+-- This forces a screen redraw after UI loads, clearing the corruption.
+vim.api.nvim_create_autocmd("UIEnter", {
+  callback = function()
+    vim.defer_fn(function()
+      vim.cmd("mode")
+    end, 100)
+  end,
+})

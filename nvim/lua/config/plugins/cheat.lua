@@ -8,6 +8,8 @@ return {
 		},
 		opts = {
 			preset = "helix",
+			notify = false,
+			debug = false,
 			spec = {
 				{
 					mode = { "n", "v" },
@@ -20,7 +22,6 @@ return {
 					{ "<leader>r", group = "buffer exit" },
 					{ "<leader>v", group = "void paste", icon = { icon = "📋", color = "red" } },
 					{ "<leader>g", group = "git" },
-					{ "<leader>a", group = "avante" },
 					{ "<leader>t", group = "tabs" },
 					{ "<leader>gh", group = "git hunks" },
 					{ "<leader>s", group = "session" },
