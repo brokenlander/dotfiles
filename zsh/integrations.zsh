@@ -33,3 +33,6 @@ export FZF_ALT_C_COMMAND='fdfind --type d --hidden --follow --exclude .git'
 if command -v direnv &> /dev/null; then
     eval "$(direnv hook zsh)"
 fi
+
+# Disable git branch in prompt (keep git plugin for aliases)
+git_prompt_info() { }
