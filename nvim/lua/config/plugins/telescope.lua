@@ -1,8 +1,8 @@
 return {
   {
     "nvim-telescope/telescope.nvim",
-    tag = "0.1.8", -- Use the stable version
-    dependencies = { 
+    branch = "master", -- Use latest for treesitter compatibility
+    dependencies = {
       "nvim-lua/plenary.nvim",
       { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
       "nvim-tree/nvim-web-devicons",
@@ -12,12 +12,16 @@ return {
       -- Import required modules
       local actions = require("telescope.actions")
       local telescope = require("telescope")
-      
+
       -- Basic telescope configuration
       telescope.setup({
         defaults = {
           -- Default configuration
           path_display = {"smart"},
+          -- Disable treesitter in previews to avoid ft_to_lang compatibility issues
+          preview = {
+            treesitter = false,
+          },
           mappings = {
             i = {
               ["<C-h>"] = "which_key",
@@ -25,7 +29,7 @@ return {
               ["<C-j>"] = actions.move_selection_next,
               ["<C-q>"] = actions.send_selected_to_qflist + actions.open_qflist
             }
-          }
+          },
         },
         pickers = {
           -- Configure specific pickers

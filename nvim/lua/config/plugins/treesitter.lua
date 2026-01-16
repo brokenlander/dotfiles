@@ -5,23 +5,9 @@ return {
     lazy = false,
     build = ":TSUpdate",
     config = function()
-      local treesitter = require("nvim-treesitter")
-      treesitter.setup({
-        ensure_installed = {
-          "python", "javascript", "typescript", "lua", "tsx",
-          "json", "html", "css", "yaml", "markdown", "markdown_inline",
-          "bash", "regex", "dockerfile", "graphql", "prisma",
-          "toml", "vim", "vimdoc", "query",
-        },
-        highlight = { enable = true },
-        indent = { enable = true },
-      })
-      -- Enable treesitter features via autocmd
-      vim.api.nvim_create_autocmd("FileType", {
-        callback = function(args)
-          pcall(vim.treesitter.start, args.buf)
-        end,
-      })
+      -- Treesitter is built into Neovim, we just need to ensure parsers are installed
+      -- Parsers are installed via the build command in install.sh
+      -- No additional configuration needed - treesitter highlighting works automatically
     end,
   },
   {
