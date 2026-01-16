@@ -2,8 +2,8 @@
 # ----------------------------------------
 
 # bat (modern cat replacement)
-alias bat='batcat'
-alias cat='batcat'
+alias bat='batcat --paging=never'
+alias cat='batcat --paging=never -pp'
 
 # eza (modern ls replacement)
 alias ls='eza'
@@ -44,3 +44,6 @@ alias mm='micromamba'
 
 # neovim
 alias vim='nvim'
+
+# lazygit
+alias lg='lazygit'
