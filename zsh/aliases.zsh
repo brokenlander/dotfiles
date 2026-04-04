@@ -11,8 +11,7 @@ alias ll='eza -la'
 alias la='eza -a'
 alias lt='eza -T'  # Tree view
 
-# fd (modern find replacement)
-alias find='fd'
+# fd (modern find replacement — don't alias find, it breaks system scripts)
 alias fd='fdfind'
 
 # ripgrep (modern grep replacement)
@@ -24,14 +23,14 @@ alias du='dust'
 # btop (modern top replacement)
 alias top='btop'
 
-# zoxide (modern cd replacement)
-alias cd='z'
+# zoxide (smart cd — use 'z' directly, don't alias cd)
+alias zz='z'
 
 # delta (modern diff replacement)
 alias diff='delta'
 
-# tldr (simplified man pages)
-alias man='tldr'
+# tldr (simplified man pages — use 'help' instead of overriding man)
+alias help='tldr'
 
 # duf
 alias df='duf'
