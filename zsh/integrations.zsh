@@ -1,6 +1,9 @@
 # Shell Integrations for Enhanced Tools
 # ======================================
 
+# Ensure ~/.local/bin is on PATH (pipx, claude, uv, etc.)
+export PATH="$HOME/.local/bin:$PATH"
+
 # Terminal Color Support - Enable truecolor (24-bit) support
 export COLORTERM=truecolor
 
