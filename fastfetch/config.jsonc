@@ -32,8 +32,6 @@
         { "type": "disk", "key": " Disk" },
         { "type": "shell", "key": " Shell" },
         { "type": "terminal", "key": " Term" },
-        { "type": "uptime", "key": "󰅐 Uptime" },
-        "break",
-        "colors"
+        { "type": "uptime", "key": "󰅐 Uptime" }
     ]
 }
