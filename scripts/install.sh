@@ -164,8 +164,26 @@ else
 fi
 
 # -------- Install Neovim plugins --------
-echo "Installing Neovim plugins and LSP servers..."
-nvim --headless "+Lazy! sync" +qa && nvim --headless "+MasonInstall basedpyright lua_ls" +qa && nvim --headless "+lua require('nvim-treesitter').install({'python','lua','markdown','markdown_inline','javascript','typescript','json','html','css','yaml','bash'}):wait(120000)" +qa
+echo "Installing Neovim plugins..."
+if nvim --headless "+Lazy! sync" +qa 2>/dev/null; then
+    echo -e "${GREEN}Neovim plugins installed${NC}"
+else
+    echo -e "${RED}WARNING: Neovim plugin install failed. Run 'nvim' manually to complete setup.${NC}"
+fi
+
+echo "Installing LSP servers..."
+if nvim --headless "+MasonInstall basedpyright lua_ls" +qa 2>/dev/null; then
+    echo -e "${GREEN}LSP servers installed${NC}"
+else
+    echo -e "${RED}WARNING: LSP install failed. Open Neovim and run :MasonInstall manually.${NC}"
+fi
+
+echo "Installing Treesitter parsers..."
+if nvim --headless "+lua require('nvim-treesitter').install({'python','lua','markdown','markdown_inline','javascript','typescript','json','html','css','yaml','bash'}):wait(120000)" +qa 2>/dev/null; then
+    echo -e "${GREEN}Treesitter parsers installed${NC}"
+else
+    echo -e "${RED}WARNING: Treesitter install failed. Open Neovim to complete setup.${NC}"
+fi
 
 echo -e "\n${GREEN}Installation complete!${NC}"
 echo "Desktop configs installed: $HAS_DISPLAY"

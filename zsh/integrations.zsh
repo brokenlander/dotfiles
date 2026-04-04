@@ -44,6 +44,3 @@ fi
 if command -v starship &> /dev/null; then
     eval "$(starship init zsh)"
 fi
-
-# Disable git branch in prompt (handled by Starship)
-git_prompt_info() { }
