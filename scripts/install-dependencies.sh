@@ -10,15 +10,19 @@ fi
 echo "=== Starting dependency installation ==="
 echo "Desktop detected: $HAS_DISPLAY"
 
-# Clean up old Docker config first (prevents apt errors from stale repos)
-echo "=== Cleaning up old package configs ==="
-sudo rm -f /etc/apt/sources.list.d/docker.list
-sudo rm -f /etc/apt/keyrings/docker.asc
-sudo rm -f /etc/apt/keyrings/docker.gpg
-for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; do
-    sudo apt-get purge -y $pkg 2>/dev/null || true
-done
-sudo apt-get autoremove -y 2>/dev/null || true
+# Clean up old Docker config (only if Docker is missing or not from official repo)
+if dpkg -l docker-ce 2>/dev/null | grep -q "^ii"; then
+    echo "=== Docker already installed from official repo, skipping cleanup ==="
+else
+    echo "=== Cleaning up old package configs ==="
+    sudo rm -f /etc/apt/sources.list.d/docker.list
+    sudo rm -f /etc/apt/keyrings/docker.asc
+    sudo rm -f /etc/apt/keyrings/docker.gpg
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+        sudo apt-get purge -y $pkg 2>/dev/null || true
+    done
+    sudo apt-get autoremove -y 2>/dev/null || true
+fi
 
 # Update system
 echo "=== Updating system ==="
@@ -92,16 +96,20 @@ sudo apt install -y neovim git
 
 # Docker
 echo "=== Installing Docker ==="
-sudo apt-get install -y ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+if dpkg -l docker-ce 2>/dev/null | grep -q "^ii"; then
+    echo "Docker already installed from official repo, skipping..."
+else
+    sudo apt-get install -y ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+fi
 sudo usermod -aG docker "$USER"
 
 # Lazydocker
