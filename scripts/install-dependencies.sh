@@ -165,8 +165,6 @@ pipx install pylint
 pipx install black
 pipx install isort
 
-# Python neovim provider
-pip3 install pynvim --break-system-packages
 
 # fnm (Fast Node Manager)
 echo "=== Installing fnm ==="
