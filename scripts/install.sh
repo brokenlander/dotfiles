@@ -8,9 +8,16 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DOTFILES="$(dirname "$SCRIPT_DIR")"
 BACKUP_DIR="$HOME/.dotfiles_backup/$(date +%Y%m%d_%H%M%S)"
 
+# Detect desktop environment
+HAS_DISPLAY=false
+if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ] || [ -n "$XDG_CURRENT_DESKTOP" ]; then
+    HAS_DISPLAY=true
+fi
+
 # Print paths for debugging
 echo "Script directory: $SCRIPT_DIR"
 echo "Dotfiles directory: $DOTFILES"
+echo "Desktop detected: $HAS_DISPLAY"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -32,17 +39,17 @@ backup_file() {
 create_symlink() {
     local source=$1
     local target=$2
-    
+
     echo "Creating symlink: $source -> $target"
-    
+
     # Backup existing file
     if [ -e "$target" ]; then
         backup_file "$target"
     fi
-    
+
     # Create parent directory if it doesn't exist
     mkdir -p "$(dirname "$target")"
-    
+
     # Create the symlink
     ln -sf "$source" "$target"
     echo -e "${GREEN}Linked${NC} $source to $target"
@@ -64,41 +71,50 @@ create_symlink "$DOTFILES/zsh/integrations.zsh" "$HOME/.dotfiles/zsh/integration
 # Backup the existing .zshrc
 backup_file "$HOME/.zshrc"
 
-# Add the source lines to .zshrc if they don't exist
+# Add ZSH plugin sourcing and dotfiles to .zshrc if not already present
 if ! grep -q "source \$HOME/.dotfiles/zsh/aliases.zsh" "$HOME/.zshrc" 2>/dev/null; then
-    echo "" >> "$HOME/.zshrc"
-    echo "# Added by dotfiles installer" >> "$HOME/.zshrc"
-    echo "source \$HOME/.dotfiles/zsh/aliases.zsh" >> "$HOME/.zshrc"
-    echo "source \$HOME/.dotfiles/zsh/key-bindings.zsh" >> "$HOME/.zshrc"
-    echo "source \$HOME/.dotfiles/zsh/integrations.zsh" >> "$HOME/.zshrc"
-    echo -e "${GREEN}Added${NC} source lines to ~/.zshrc"
+    cat >> "$HOME/.zshrc" << 'EOL'
+
+# ZSH plugins (autosuggestions, syntax highlighting, completions)
+ZSH_PLUGINS="$HOME/.zsh/plugins"
+[ -f "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh"
+[ -f "$ZSH_PLUGINS/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$ZSH_PLUGINS/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+[ -f "$ZSH_PLUGINS/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh" ] && source "$ZSH_PLUGINS/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
+[ -d "$ZSH_PLUGINS/zsh-completions/src" ] && fpath=("$ZSH_PLUGINS/zsh-completions/src" $fpath)
+
+# Initialize completions
+autoload -Uz compinit && compinit
+
+# Added by dotfiles installer
+source $HOME/.dotfiles/zsh/aliases.zsh
+source $HOME/.dotfiles/zsh/key-bindings.zsh
+source $HOME/.dotfiles/zsh/integrations.zsh
+EOL
+    echo -e "${GREEN}Added${NC} plugin sourcing and dotfiles to ~/.zshrc"
 else
     echo -e "${YELLOW}Source lines already exist${NC} in ~/.zshrc"
 fi
 
-# Add source line for integrations if it doesn't exist (for existing installations)
-if ! grep -q "source \$HOME/.dotfiles/zsh/integrations.zsh" "$HOME/.zshrc" 2>/dev/null; then
-    echo "source \$HOME/.dotfiles/zsh/integrations.zsh" >> "$HOME/.zshrc"
-    echo -e "${GREEN}Added${NC} integrations source line to ~/.zshrc"
+# -------- Starship Configuration --------
+echo "Setting up Starship configuration..."
+
+if [ -f "$DOTFILES/starship/starship.toml" ]; then
+    create_symlink "$DOTFILES/starship/starship.toml" "$HOME/.config/starship.toml"
+else
+    echo -e "${RED}Error:${NC} starship.toml not found!"
 fi
 
-# -------- Git Configuration (Replace) --------
+# -------- Git Configuration --------
 echo "Setting up Git configuration..."
 
-# Check if Git files exist
 if [ -f "$DOTFILES/git/.gitconfig" ]; then
-    echo "Found .gitconfig at $DOTFILES/git/.gitconfig"
-    # Direct symlink creation - avoid using function for critical path
     create_symlink "$DOTFILES/git/.gitconfig" "$HOME/.gitconfig"
-    echo -e "${GREEN}Linked${NC} $DOTFILES/git/.gitconfig to $HOME/.gitconfig"
 else
     echo -e "${RED}Error:${NC} $DOTFILES/git/.gitconfig not found!"
 fi
 
 if [ -f "$DOTFILES/git/.gitignore_global" ]; then
-    echo "Found .gitignore_global at $DOTFILES/git/.gitignore_global"
     create_symlink "$DOTFILES/git/.gitignore_global" "$HOME/.gitignore_global"
-    echo -e "${GREEN}Linked${NC} $DOTFILES/git/.gitignore_global to $HOME/.gitignore_global"
 else
     echo -e "${RED}Error:${NC} $DOTFILES/git/.gitignore_global not found!"
 fi
@@ -107,9 +123,7 @@ fi
 echo "Setting up Tmux configuration..."
 
 if [ -f "$DOTFILES/tmux/.tmux.conf" ]; then
-    echo "Found .tmux.conf at $DOTFILES/tmux/.tmux.conf"
     create_symlink "$DOTFILES/tmux/.tmux.conf" "$HOME/.tmux.conf"
-    echo -e "${GREEN}Linked${NC} $DOTFILES/tmux/.tmux.conf to $HOME/.tmux.conf"
 
     # Install tmux plugins via TPM
     if [ -d "$HOME/.tmux/plugins/tpm" ]; then
@@ -123,62 +137,37 @@ else
     echo -e "${RED}Error:${NC} $DOTFILES/tmux/.tmux.conf not found!"
 fi
 
-# -------- Oh-My-ZSH Setup --------
-# Install oh-my-zsh if not present
-if [ ! -d "$HOME/.oh-my-zsh" ]; then
-    echo "Installing Oh My ZSH..."
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-fi
-
-# Update Oh-My-ZSH configuration
-ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
-
-# Install plugins if not present
-if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
-    echo "Installing zsh-autosuggestions..."
-    git clone https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-fi
-
-if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
-    echo "Installing zsh-syntax-highlighting..."
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-fi
-
-if [ ! -d "$ZSH_CUSTOM/plugins/fast-syntax-highlighting" ]; then
-    echo "Installing fast-syntax-highlighting..."
-    git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git "$ZSH_CUSTOM/plugins/fast-syntax-highlighting"
-fi
-
-# Update plugins in .zshrc
-if grep -q "^plugins=" "$HOME/.zshrc"; then
-    echo "Updating Oh-My-ZSH plugins..."
-    # Create a backup of .zshrc before we modify it
-    cp "$HOME/.zshrc" "$HOME/.zshrc.bak.$(date +%Y%m%d%H%M%S)"
-    # Use sed to replace the plugins line
-    sed -i 's/^plugins=.*/plugins=(git zsh-autosuggestions zsh-syntax-highlighting fast-syntax-highlighting kubectl docker python npm)/' "$HOME/.zshrc"
-fi
-
-# Check for GitHub CLI
-if ! command -v gh &> /dev/null; then
-    echo "GitHub CLI not found. We recommend installing it for better GitHub integration."
-    echo "You can install it with: mamba install gh --channel conda-forge"
-fi
-
-echo -e "\n${GREEN}Installation complete!${NC}"
-echo "Restart your terminal or run 'source ~/.zshrc' to apply changes."
-
 # -------- Neovim Configuration --------
 echo "Setting up Neovim configuration..."
 
 if [ -d "$DOTFILES/nvim" ]; then
-    echo "Found Neovim configuration at $DOTFILES/nvim"
-    
-    # Create symlink for the entire nvim directory
     create_symlink "$DOTFILES/nvim" "$HOME/.config/nvim"
-    
-    echo -e "${GREEN}Linked${NC} Neovim configuration from $DOTFILES/nvim to $HOME/.config/nvim"
 else
     echo -e "${RED}Error:${NC} $DOTFILES/nvim directory not found!"
 fi
 
+# -------- Desktop-only: Kitty & Kate --------
+if [ "$HAS_DISPLAY" = true ]; then
+    echo "Setting up desktop configurations..."
+
+    # Kitty
+    if [ -f "$DOTFILES/kitty/kitty.conf" ]; then
+        create_symlink "$DOTFILES/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
+    fi
+
+    # Kate Tokyo Night theme
+    if [ -f "$DOTFILES/kate/tokyo-night.theme" ]; then
+        mkdir -p "$HOME/.local/share/org.kde.syntax-highlighting/themes"
+        create_symlink "$DOTFILES/kate/tokyo-night.theme" "$HOME/.local/share/org.kde.syntax-highlighting/themes/tokyo-night.theme"
+    fi
+else
+    echo "Skipping desktop configs (no display detected)"
+fi
+
+# -------- Install Neovim plugins --------
+echo "Installing Neovim plugins and LSP servers..."
 nvim --headless "+Lazy! sync" +qa && nvim --headless "+MasonInstall basedpyright lua_ls" +qa && nvim --headless "+lua require('nvim-treesitter').install({'python','lua','markdown','markdown_inline','javascript','typescript','json','html','css','yaml','bash'}):wait(120000)" +qa
+
+echo -e "\n${GREEN}Installation complete!${NC}"
+echo "Desktop configs installed: $HAS_DISPLAY"
+echo "Restart your terminal or run 'source ~/.zshrc' to apply changes."
