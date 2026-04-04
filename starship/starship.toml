@@ -1,5 +1,4 @@
-# Starship Prompt Configuration
-# Tokyo Night inspired colors
+# Starship Prompt — Tokyo Night minimal single-line
 
 format = """
 $directory\
@@ -8,23 +7,24 @@ $git_status\
 $python\
 $nodejs\
 $docker_context\
+$cmd_duration\
 $character"""
 
 [character]
-success_symbol = "[❯](bold green)"
-error_symbol = "[❯](bold red)"
+success_symbol = "[❯](#7aa2f7)"
+error_symbol = "[❯](#f7768e)"
 
 [directory]
-style = "bold cyan"
+style = "bold #769ff0"
 truncation_length = 3
 truncate_to_repo = true
 
 [git_branch]
 symbol = " "
-style = "bold purple"
+style = "#bb9af7"
 
 [git_status]
-style = "bold red"
+style = "#e0af68"
 ahead = "⇡${count}"
 behind = "⇣${count}"
 diverged = "⇕⇡${ahead_count}⇣${behind_count}"
@@ -34,20 +34,21 @@ untracked = "?${count}"
 
 [python]
 symbol = " "
-style = "bold yellow"
-format = "via [${symbol}${pyenv_prefix}(${version} )(\\($virtualenv\\) )]($style)"
+style = "#9ece6a"
+format = "[$symbol($virtualenv) ]($style)"
 
 [nodejs]
 symbol = " "
-style = "bold green"
+style = "#9ece6a"
 
 [docker_context]
 symbol = " "
-style = "bold blue"
+style = "#7dcfff"
 
 [line_break]
 disabled = true
 
 [cmd_duration]
 min_time = 2_000
-style = "bold yellow"
+style = "#565f89"
+format = "[$duration ]($style)"
