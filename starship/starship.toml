@@ -8,7 +8,6 @@ $git_status\
 $python\
 $nodejs\
 $docker_context\
-$line_break\
 $character"""
 
 [character]
@@ -47,7 +46,7 @@ symbol = " "
 style = "bold blue"
 
 [line_break]
-disabled = false
+disabled = true
 
 [cmd_duration]
 min_time = 2_000
