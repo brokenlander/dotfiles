@@ -45,3 +45,8 @@ fi
 if command -v starship &> /dev/null; then
     eval "$(starship init zsh)"
 fi
+
+# Fastfetch on new interactive shell (not in nvim terminals or scripts)
+if [[ $- == *i* ]] && [ -z "$NVIM" ] && command -v fastfetch &> /dev/null; then
+    fastfetch
+fi
