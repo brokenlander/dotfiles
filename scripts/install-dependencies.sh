@@ -189,6 +189,18 @@ else
     fi
 fi
 
+# Agency Agents (Claude Code agent personalities)
+echo "=== Installing Agency Agents ==="
+if [ -d "$HOME/.claude/agents" ] && [ "$(ls -A $HOME/.claude/agents 2>/dev/null)" ]; then
+    echo "Agency agents already installed, skipping..."
+else
+    AGENCY_TMP=$(mktemp -d)
+    git clone https://github.com/msitarzewski/agency-agents.git "$AGENCY_TMP"
+    mkdir -p "$HOME/.claude/agents"
+    cp -r "$AGENCY_TMP"/agents/* "$HOME/.claude/agents/" 2>/dev/null || cp -r "$AGENCY_TMP"/*.md "$HOME/.claude/agents/" 2>/dev/null || true
+    rm -rf "$AGENCY_TMP"
+fi
+
 # TPM (Tmux Plugin Manager)
 echo "=== Installing TPM ==="
 if [ -d "$HOME/.tmux/plugins/tpm" ]; then
