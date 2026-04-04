@@ -33,7 +33,7 @@ sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq gl
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
-    sudo apt-get install -y kitty keepassxc haruna steam-installer
+    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras
 fi
 
 # Enable SSH
@@ -248,6 +248,23 @@ if [ "$HAS_DISPLAY" = true ]; then
     wget -qO /tmp/JetBrainsMono.zip "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
     unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono/
     fc-cache -f
+
+    echo "=== Installing Keymapp (ZSA keyboard firmware) ==="
+    if [ ! -f /opt/keymapp/keymapp ]; then
+        wget -O /tmp/keymapp.tar.gz "https://oryx.nyc3.cdn.digitaloceanspaces.com/keymapp/keymapp-latest.tar.gz"
+        sudo mkdir -p /opt/keymapp
+        sudo tar -xzf /tmp/keymapp.tar.gz -C /opt/keymapp/
+        sudo ln -sf /opt/keymapp/keymapp /usr/local/bin/keymapp
+    fi
+    # ZSA udev rules
+    if [ ! -f /etc/udev/rules.d/50-zsa.rules ]; then
+        sudo bash -c 'cat > /etc/udev/rules.d/50-zsa.rules << UDEV
+SUBSYSTEM=="usb", ATTR{idVendor}=="3297", GROUP="plugdev"
+SUBSYSTEM=="usb", ATTR{idVendor}=="3297", ATTR{idProduct}=="0791", GROUP="plugdev"
+UDEV'
+        sudo udevadm control --reload-rules
+    fi
+    sudo usermod -aG plugdev "$USER"
 
     echo "=== Applying KDE desktop settings ==="
     plasma-apply-lookandfeel --apply org.kde.breezedark.desktop
