@@ -32,12 +32,12 @@ sudo apt-get full-upgrade -y
 
 # General tools (shared)
 echo "=== Installing general tools ==="
-sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq glow libudev-dev openssh-server autossh fastfetch cava cmatrix cbonsai
+sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq glow libudev-dev openssh-server autossh fastfetch cava cmatrix cbonsai nvtop gping
 
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
-    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme peek onedrive obs-studio
+    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio
 
     # Zen Browser
     echo "=== Installing Zen Browser ==="
