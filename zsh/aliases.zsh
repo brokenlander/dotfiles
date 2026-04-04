@@ -23,8 +23,8 @@ alias du='dust'
 # btop (modern top replacement)
 alias top='btop'
 
-# zoxide (smart cd — use 'z' directly, don't alias cd)
-alias zz='z'
+# zoxide (modern cd replacement)
+alias cd='z'
 
 # delta (modern diff replacement)
 alias diff='delta'
