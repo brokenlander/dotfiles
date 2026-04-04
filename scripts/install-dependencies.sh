@@ -43,7 +43,7 @@ sudo systemctl enable ssh
 echo "=== Installing ZSH ==="
 sudo apt install -y zsh
 sudo usermod -s $(which zsh) "$USER"
-touch /home/$USER/.zshrc
+touch "$HOME/.zshrc"
 
 # Modern CLI replacements
 echo "=== Installing modern CLI tools ==="
@@ -77,14 +77,22 @@ fi
 
 # Neovim
 echo "=== Installing Neovim ==="
-timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/stable || echo "PPA add timed out, trying anyway..."
-sudo apt update
+if timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/stable 2>/dev/null; then
+    sudo apt update
+    echo "PPA added successfully, installing Neovim from PPA..."
+else
+    echo "WARNING: Neovim PPA failed. Installing from Ubuntu repo instead."
+fi
 sudo apt install -y neovim
 
 # Git
 echo "=== Installing Git ==="
-timeout 30 sudo add-apt-repository -y ppa:git-core/ppa || echo "PPA add timed out, trying anyway..."
-sudo apt update
+if timeout 30 sudo add-apt-repository -y ppa:git-core/ppa 2>/dev/null; then
+    sudo apt update
+    echo "PPA added successfully, installing Git from PPA..."
+else
+    echo "WARNING: Git PPA failed. Installing from Ubuntu repo instead."
+fi
 sudo apt install -y git
 
 # Docker
@@ -287,8 +295,8 @@ UDEV'
     sudo usermod -aG plugdev "$USER"
 
     echo "=== Applying KDE desktop settings ==="
-    plasma-apply-lookandfeel --apply org.kde.breezedark.desktop
-    kscreen-doctor output.1.scale.1.5
+    plasma-apply-lookandfeel --apply org.kde.breezedark.desktop || echo "WARNING: Plasma not running, apply dark mode manually after login."
+    kscreen-doctor output.1.scale.1.5 || echo "WARNING: Could not set display scale, set manually in System Settings > Display."
     sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 fi
 

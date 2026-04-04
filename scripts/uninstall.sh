@@ -9,14 +9,21 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Find the most recent backup
-BACKUP_DIR=$(find "$HOME/.dotfiles_backup" -type d -name "20*" | sort -r | head -n 1)
+BACKUP_DIR=$(find "$HOME/.dotfiles_backup" -type d -name "20*" 2>/dev/null | sort -r | head -n 1)
+
+if [ -z "$BACKUP_DIR" ]; then
+    echo -e "${YELLOW}No backup directory found.${NC} Symlinks will be removed but original configs cannot be restored."
+    echo "Continue? (y/N)"
+    read -r response
+    [ "$response" != "y" ] && echo "Aborted." && exit 0
+fi
 
 echo "Uninstalling terminal configuration..."
+[ -n "$BACKUP_DIR" ] && echo "Using backup from: $BACKUP_DIR"
 
 # Function to restore from backup
 restore_file() {
     local file=$1
-    local backup="$BACKUP_DIR/$(basename "$file")"
 
     # Remove symlink
     if [ -L "$file" ]; then
@@ -25,9 +32,12 @@ restore_file() {
     fi
 
     # Restore from backup if available
-    if [ -e "$backup" ]; then
-        cp "$backup" "$file"
-        echo -e "${GREEN}Restored${NC} $file from backup"
+    if [ -n "$BACKUP_DIR" ]; then
+        local backup="$BACKUP_DIR/$(basename "$file")"
+        if [ -e "$backup" ]; then
+            cp "$backup" "$file"
+            echo -e "${GREEN}Restored${NC} $file from backup"
+        fi
     fi
 }
 
@@ -49,7 +59,7 @@ if [ -L "$HOME/.config/nvim" ]; then
     rm "$HOME/.config/nvim"
     echo -e "${YELLOW}Removed Neovim symlink${NC} $HOME/.config/nvim"
 
-    if [ -d "$BACKUP_DIR/nvim" ]; then
+    if [ -n "$BACKUP_DIR" ] && [ -d "$BACKUP_DIR/nvim" ]; then
         mkdir -p "$HOME/.config"
         cp -r "$BACKUP_DIR/nvim" "$HOME/.config/"
         echo -e "${GREEN}Restored${NC} Neovim configuration from backup"
@@ -68,12 +78,13 @@ if [ -L "$HOME/.local/share/org.kde.syntax-highlighting/themes/tokyo-night.theme
     echo -e "${YELLOW}Removed${NC} Kate Tokyo Night theme symlink"
 fi
 
-# Clean up .zshrc
-if [ -f "$HOME/.zshrc" ]; then
-    echo "Cleaning up .zshrc..."
-
+# Restore .zshrc from backup if it exists, otherwise strip dotfiles lines
+if [ -n "$BACKUP_DIR" ] && [ -f "$BACKUP_DIR/.zshrc" ]; then
+    cp "$BACKUP_DIR/.zshrc" "$HOME/.zshrc"
+    echo -e "${GREEN}Restored${NC} original .zshrc from backup"
+elif [ -f "$HOME/.zshrc" ]; then
+    echo "No .zshrc backup found, stripping dotfiles-specific lines..."
     TEMP_FILE=$(mktemp)
-
     sed '/# Added by dotfiles installer/d;
          /source \$HOME\/.dotfiles\/zsh\/aliases.zsh/d;
          /source \$HOME\/.dotfiles\/zsh\/key-bindings.zsh/d;
@@ -81,16 +92,13 @@ if [ -f "$HOME/.zshrc" ]; then
          /# ZSH plugins (autosuggestions/d;
          /ZSH_PLUGINS="\$HOME\/.zsh\/plugins"/d;
          /zsh-autosuggestions\.zsh/d;
-         /zsh-syntax-highlighting\.zsh/d;
          /fast-syntax-highlighting\.plugin\.zsh/d;
          /zsh-completions\/src/d;
          /autoload -Uz compinit/d;
          /# Initialize completions/d;
          /# >>> mamba initialize >>>/,/# <<< mamba initialize <<</d' "$HOME/.zshrc" > "$TEMP_FILE"
-
     cp "$TEMP_FILE" "$HOME/.zshrc"
     rm "$TEMP_FILE"
-
     echo -e "${GREEN}Removed${NC} dotfiles-specific lines from .zshrc"
 fi
 
@@ -109,12 +117,6 @@ fi
 if [ -d "$HOME/.zsh/plugins" ]; then
     rm -rf "$HOME/.zsh/plugins"
     echo -e "${YELLOW}Removed${NC} ZSH plugins"
-fi
-
-# Restore .zshrc from backup if it exists
-if [ -f "$BACKUP_DIR/.zshrc" ]; then
-    cp "$BACKUP_DIR/.zshrc" "$HOME/.zshrc"
-    echo -e "${GREEN}Restored${NC} original .zshrc from backup"
 fi
 
 # Remove micromamba
