@@ -55,12 +55,16 @@ if command -v dust &> /dev/null; then
     echo "Dust already installed, skipping..."
 else
     DUST_VERSION=$(curl -s "https://api.github.com/repos/bootandy/dust/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
-    wget "https://github.com/bootandy/dust/releases/download/v${DUST_VERSION}/dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-    tar -xf "dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-    sudo mv "dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu/dust" /usr/local/bin/
-    sudo chmod +x /usr/local/bin/dust
-    rm "dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-    rm -rf "dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu"
+    if [ -z "$DUST_VERSION" ]; then
+        echo "WARNING: Failed to fetch dust version (GitHub API rate limit?). Skipping."
+    else
+        wget -P /tmp "https://github.com/bootandy/dust/releases/download/v${DUST_VERSION}/dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+        tar -xf "/tmp/dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz" -C /tmp
+        sudo mv "/tmp/dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu/dust" /usr/local/bin/
+        sudo chmod +x /usr/local/bin/dust
+        rm "/tmp/dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+        rm -rf "/tmp/dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu"
+    fi
 fi
 
 # Starship prompt
@@ -121,10 +125,6 @@ if [ ! -d "$ZSH_PLUGINS/zsh-autosuggestions" ]; then
     git clone https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_PLUGINS/zsh-autosuggestions"
 fi
 
-if [ ! -d "$ZSH_PLUGINS/zsh-syntax-highlighting" ]; then
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_PLUGINS/zsh-syntax-highlighting"
-fi
-
 if [ ! -d "$ZSH_PLUGINS/fast-syntax-highlighting" ]; then
     git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git "$ZSH_PLUGINS/fast-syntax-highlighting"
 fi
@@ -158,7 +158,7 @@ pipx install black
 pipx install isort
 
 # Python neovim provider
-pip install pynvim --break-system-packages
+pip3 install pynvim --break-system-packages
 
 # fnm (Fast Node Manager)
 echo "=== Installing fnm ==="
@@ -231,10 +231,14 @@ if command -v lazygit &> /dev/null; then
     echo "Lazygit already installed, skipping..."
 else
     LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
-    curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-    tar xf lazygit.tar.gz lazygit
-    sudo install lazygit -D -t /usr/local/bin/
-    rm lazygit.tar.gz lazygit
+    if [ -z "$LAZYGIT_VERSION" ]; then
+        echo "WARNING: Failed to fetch lazygit version. Skipping."
+    else
+        curl -Lo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+        tar xf /tmp/lazygit.tar.gz -C /tmp lazygit
+        sudo install /tmp/lazygit -D -t /usr/local/bin/
+        rm /tmp/lazygit.tar.gz /tmp/lazygit
+    fi
 fi
 
 # Desktop-only: OnlyOffice, Vesktop, Fonts, KDE settings
@@ -251,9 +255,13 @@ if [ "$HAS_DISPLAY" = true ]; then
 
     echo "=== Installing Vesktop ==="
     VESKTOP_VERSION=$(curl -s "https://api.github.com/repos/Vencord/Vesktop/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
-    wget -O /tmp/vesktop.deb "https://github.com/Vencord/Vesktop/releases/download/v${VESKTOP_VERSION}/vesktop_${VESKTOP_VERSION}_amd64.deb"
-    sudo dpkg -i /tmp/vesktop.deb
-    sudo apt-get install -f -y
+    if [ -z "$VESKTOP_VERSION" ]; then
+        echo "WARNING: Failed to fetch Vesktop version. Skipping."
+    else
+        wget -O /tmp/vesktop.deb "https://github.com/Vencord/Vesktop/releases/download/v${VESKTOP_VERSION}/vesktop_${VESKTOP_VERSION}_amd64.deb"
+        sudo dpkg -i /tmp/vesktop.deb
+        sudo apt-get install -f -y
+    fi
 
     echo "=== Installing JetBrains Mono Nerd Font ==="
     mkdir -p ~/.local/share/fonts
