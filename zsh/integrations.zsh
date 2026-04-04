@@ -1,6 +1,15 @@
 # Shell Integrations for Enhanced Tools
 # ======================================
 
+# ZSH history (required for autosuggestions — OMZ handled this before)
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt APPEND_HISTORY
+setopt SHARE_HISTORY
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+
 # Ensure ~/.local/bin is on PATH (pipx, claude, uv, etc.)
 export PATH="$HOME/.local/bin:$PATH"
 
