@@ -87,9 +87,8 @@ else
     curl -sS https://starship.rs/install.sh | sh -s -- -y
 fi
 
-# Add PPAs for Neovim and Git
-echo "=== Adding PPAs ==="
-timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/stable 2>/dev/null || echo "WARNING: Neovim PPA failed, will use Ubuntu repo version."
+# Git PPA (for latest version) + Neovim (Ubuntu repo is fine for 26.04+)
+echo "=== Installing Neovim and Git ==="
 timeout 30 sudo add-apt-repository -y ppa:git-core/ppa 2>/dev/null || echo "WARNING: Git PPA failed, will use Ubuntu repo version."
 sudo apt update
 sudo apt install -y neovim git
