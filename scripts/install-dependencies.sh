@@ -34,6 +34,14 @@ sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq gl
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
     sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar
+
+    # Zen Browser
+    echo "=== Installing Zen Browser ==="
+    if command -v zen-browser &> /dev/null || [ -d "$HOME/.tarball-installations/zen" ]; then
+        echo "Zen Browser already installed, skipping..."
+    else
+        curl -fsSL https://github.com/zen-browser/updates-server/raw/refs/heads/main/install.sh | bash
+    fi
 fi
 
 # Enable SSH
@@ -75,25 +83,12 @@ else
     curl -sS https://starship.rs/install.sh | sh -s -- -y
 fi
 
-# Neovim
-echo "=== Installing Neovim ==="
-if timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/stable 2>/dev/null; then
-    sudo apt update
-    echo "PPA added successfully, installing Neovim from PPA..."
-else
-    echo "WARNING: Neovim PPA failed. Installing from Ubuntu repo instead."
-fi
-sudo apt install -y neovim
-
-# Git
-echo "=== Installing Git ==="
-if timeout 30 sudo add-apt-repository -y ppa:git-core/ppa 2>/dev/null; then
-    sudo apt update
-    echo "PPA added successfully, installing Git from PPA..."
-else
-    echo "WARNING: Git PPA failed. Installing from Ubuntu repo instead."
-fi
-sudo apt install -y git
+# Add PPAs for Neovim and Git
+echo "=== Adding PPAs ==="
+timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/stable 2>/dev/null || echo "WARNING: Neovim PPA failed, will use Ubuntu repo version."
+timeout 30 sudo add-apt-repository -y ppa:git-core/ppa 2>/dev/null || echo "WARNING: Git PPA failed, will use Ubuntu repo version."
+sudo apt update
+sudo apt install -y neovim git
 
 # Docker
 echo "=== Installing Docker ==="
