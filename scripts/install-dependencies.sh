@@ -263,6 +263,18 @@ if [ "$HAS_DISPLAY" = true ]; then
     sudo apt-get update
     sudo apt-get install -y onlyoffice-desktopeditors
 
+    echo "=== Installing Spotify ==="
+    if ! dpkg -l spotify-client 2>/dev/null | grep -q "^ii"; then
+        TMPKEYRING=$(mktemp /tmp/spotify-keyring.XXXXXX.gpg)
+        gpg --no-default-keyring --keyring "gnupg-ring:$TMPKEYRING" --keyserver hkps://keyserver.ubuntu.com --recv-keys 5384CE82BA52C83A
+        chmod 644 "$TMPKEYRING"
+        sudo chown root:root "$TMPKEYRING"
+        sudo mv "$TMPKEYRING" /usr/share/keyrings/spotify.gpg
+        echo "deb [signed-by=/usr/share/keyrings/spotify.gpg] http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
+        sudo apt-get update
+        sudo apt-get install -y spotify-client
+    fi
+
     echo "=== Installing Vesktop ==="
     VESKTOP_VERSION=$(curl -s "https://api.github.com/repos/Vencord/Vesktop/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
     if [ -z "$VESKTOP_VERSION" ]; then
