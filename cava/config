@@ -1,7 +1,7 @@
 [general]
-bars = 0
+autosens = 1
 bar_width = 1
-bar_spacing = 1
+bar_spacing = 0
 
 [color]
 gradient = 1
