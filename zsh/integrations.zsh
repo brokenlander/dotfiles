@@ -2,13 +2,12 @@
 # ======================================
 
 # Terminal Color Support - Enable truecolor (24-bit) support
-# This tells applications like Neovim that the terminal supports 24-bit colors
 export COLORTERM=truecolor
 
-# NVM - Node Version Manager
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# fnm - Fast Node Manager
+if command -v fnm &> /dev/null; then
+    eval "$(fnm env --use-on-cd)"
+fi
 
 # FZF - Fuzzy Finder Keybindings
 # Ctrl+R: Search command history
@@ -35,12 +34,16 @@ if command -v direnv &> /dev/null; then
 fi
 
 # Micromamba - Lightweight conda package manager
-# This initializes the shell to properly use 'micromamba activate' commands
 if [ -f "$HOME/.local/bin/micromamba" ]; then
     export MAMBA_ROOT_PREFIX="$HOME/micromamba"
     export MAMBA_EXE="$HOME/.local/bin/micromamba"
     eval "$("$MAMBA_EXE" shell hook --shell zsh)"
 fi
 
-# Disable git branch in prompt (keep git plugin for aliases)
+# Starship prompt
+if command -v starship &> /dev/null; then
+    eval "$(starship init zsh)"
+fi
+
+# Disable git branch in prompt (handled by Starship)
 git_prompt_info() { }

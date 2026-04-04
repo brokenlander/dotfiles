@@ -1,37 +1,43 @@
 #!/bin/bash
 set -e
 
+# Detect desktop environment
+HAS_DISPLAY=false
+if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ] || [ -n "$XDG_CURRENT_DESKTOP" ]; then
+    HAS_DISPLAY=true
+fi
+
 echo "=== Starting dependency installation ==="
+echo "Desktop detected: $HAS_DISPLAY"
 
 # Clean up old Docker config first (prevents apt errors from stale repos)
 echo "=== Cleaning up old package configs ==="
 sudo rm -f /etc/apt/sources.list.d/docker.list
 sudo rm -f /etc/apt/keyrings/docker.asc
 sudo rm -f /etc/apt/keyrings/docker.gpg
-for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; do 
+for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; do
     sudo apt-get purge -y $pkg 2>/dev/null || true
 done
 sudo apt-get autoremove -y 2>/dev/null || true
 
 # Update system
 echo "=== Updating system ==="
-sudo apt update
-sudo apt install -y build-essential
-sudo apt upgrade -y
+sudo apt-get update
+sudo apt-get install -y build-essential
+sudo apt-get full-upgrade -y
 
-# General tools
+# General tools (shared)
 echo "=== Installing general tools ==="
-sudo apt install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq
+sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq glow libudev-dev openssh-server autossh
 
-# pipx packages
-export PATH="$HOME/.local/bin:$PATH"
-pipx ensurepath
-pipx install pylint
-pipx install black
-pipx install isort
+# Desktop-only packages
+if [ "$HAS_DISPLAY" = true ]; then
+    echo "=== Installing desktop packages ==="
+    sudo apt-get install -y kitty keepassxc haruna steam-installer
+fi
 
-# Python neovim provider
-pip install pynvim --break-system-packages
+# Enable SSH
+sudo systemctl enable ssh
 
 # ZSH
 echo "=== Installing ZSH ==="
@@ -41,27 +47,33 @@ touch /home/$USER/.zshrc
 
 # Modern CLI replacements
 echo "=== Installing modern CLI tools ==="
-sudo apt install -y bat eza fd-find ripgrep zoxide git-delta tldr duf
-
-# Bottom (remove conflicting btm package first)
-echo "=== Installing bottom ==="
-sudo apt remove -y btm 2>/dev/null || true
-curl -LO https://github.com/ClementTsang/bottom/releases/download/0.10.2/bottom_0.10.2-1_amd64.deb
-sudo dpkg -i bottom_0.10.2-1_amd64.deb
-rm bottom_0.10.2-1_amd64.deb
+sudo apt install -y bat eza fd-find ripgrep zoxide git-delta tldr duf btop difftastic
 
 # Dust
 echo "=== Installing dust ==="
-wget https://github.com/bootandy/dust/releases/download/v1.1.1/dust-v1.1.1-x86_64-unknown-linux-gnu.tar.gz
-tar -xvf dust-v1.1.1-x86_64-unknown-linux-gnu.tar.gz
-sudo mv dust-v1.1.1-x86_64-unknown-linux-gnu/dust /usr/local/bin/
-sudo chmod +x /usr/local/bin/dust
-rm dust-v1.1.1-x86_64-unknown-linux-gnu.tar.gz
-rm -rf dust-v1.1.1-x86_64-unknown-linux-gnu
+if command -v dust &> /dev/null; then
+    echo "Dust already installed, skipping..."
+else
+    DUST_VERSION=$(curl -s "https://api.github.com/repos/bootandy/dust/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
+    wget "https://github.com/bootandy/dust/releases/download/v${DUST_VERSION}/dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+    tar -xf "dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+    sudo mv "dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu/dust" /usr/local/bin/
+    sudo chmod +x /usr/local/bin/dust
+    rm "dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+    rm -rf "dust-v${DUST_VERSION}-x86_64-unknown-linux-gnu"
+fi
 
-# Neovim (timeout on PPA to avoid Launchpad hangs)
+# Starship prompt
+echo "=== Installing Starship ==="
+if command -v starship &> /dev/null; then
+    echo "Starship already installed, skipping..."
+else
+    curl -sS https://starship.rs/install.sh | sh -s -- -y
+fi
+
+# Neovim
 echo "=== Installing Neovim ==="
-timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/unstable || echo "PPA add timed out, trying anyway..."
+timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/stable || echo "PPA add timed out, trying anyway..."
 sudo apt update
 sudo apt install -y neovim
 
@@ -75,10 +87,10 @@ sudo apt install -y git
 echo "=== Installing Docker ==="
 sudo apt-get install -y ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
 echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
@@ -100,14 +112,25 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githu
 sudo apt update
 sudo apt install -y gh
 
-# Oh-My-ZSH
-echo "=== Installing Oh-My-ZSH ==="
-if [ -f "$HOME/.oh-my-zsh/oh-my-zsh.sh" ]; then
-    echo "Oh-My-ZSH already installed, skipping..."
-else
-    rm -rf "$HOME/.oh-my-zsh" 2>/dev/null || true
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-    sleep 2
+# ZSH plugins (no Oh-My-ZSH, manual install)
+echo "=== Installing ZSH plugins ==="
+ZSH_PLUGINS="$HOME/.zsh/plugins"
+mkdir -p "$ZSH_PLUGINS"
+
+if [ ! -d "$ZSH_PLUGINS/zsh-autosuggestions" ]; then
+    git clone https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_PLUGINS/zsh-autosuggestions"
+fi
+
+if [ ! -d "$ZSH_PLUGINS/zsh-syntax-highlighting" ]; then
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_PLUGINS/zsh-syntax-highlighting"
+fi
+
+if [ ! -d "$ZSH_PLUGINS/fast-syntax-highlighting" ]; then
+    git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git "$ZSH_PLUGINS/fast-syntax-highlighting"
+fi
+
+if [ ! -d "$ZSH_PLUGINS/zsh-completions" ]; then
+    git clone https://github.com/zsh-users/zsh-completions.git "$ZSH_PLUGINS/zsh-completions"
 fi
 
 # Micromamba
@@ -117,27 +140,40 @@ if [ -f "$HOME/.local/bin/micromamba" ]; then
 else
     INIT_YES="yes" CONDA_FORGE_YES="yes" bash <(curl -L micro.mamba.pm/install.sh) < /dev/null
     export PATH="$HOME/.local/bin:$PATH"
-    # Note: Shell initialization is handled by zsh/integrations.zsh in the dotfiles
-    echo "Micromamba installed. Shell initialization will be configured by install.sh"
 fi
 
-# NVM
-echo "=== Installing NVM ==="
-if [ -d "$HOME/.nvm" ]; then
-    echo "NVM already installed, skipping..."
+# uv (Python package manager)
+echo "=== Installing uv ==="
+if command -v uv &> /dev/null; then
+    echo "uv already installed, skipping..."
 else
-    # Install NVM without modifying any profile files
-    # We manage NVM initialization in dotfiles/zsh/integrations.zsh instead
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | PROFILE=/dev/null bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# pipx packages (using uv if available, pipx as fallback)
+export PATH="$HOME/.local/bin:$PATH"
+pipx ensurepath
+pipx install pylint
+pipx install black
+pipx install isort
+
+# Python neovim provider
+pip install pynvim --break-system-packages
+
+# fnm (Fast Node Manager)
+echo "=== Installing fnm ==="
+if command -v fnm &> /dev/null; then
+    echo "fnm already installed, skipping..."
+else
+    curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
+fi
+export PATH="$HOME/.local/share/fnm:$PATH"
+eval "$(fnm env)"
 
 # Node.js
 echo "=== Installing Node.js ==="
-nvm install --lts
-nvm use --lts
+fnm install --lts
+fnm use --lts
 npm install --global yarn
 npm install --global tree-sitter-cli
 npm install --global neovim
@@ -147,20 +183,18 @@ echo "=== Installing Claude Code CLI ==="
 if command -v claude &> /dev/null; then
     echo "Claude Code CLI already installed, skipping..."
 else
-    curl -fsSL claude.ai/install.sh | bash
-    # Add to PATH if not already present
+    curl -fsSL https://cli.claude.ai/install.sh | sh
     if ! grep -q "claude/bin" ~/.zshrc; then
         echo 'export PATH="$HOME/.claude/bin:$PATH"' >> ~/.zshrc
     fi
 fi
 
 # TPM (Tmux Plugin Manager)
-echo "=== Installing TPM (Tmux Plugin Manager) ==="
+echo "=== Installing TPM ==="
 if [ -d "$HOME/.tmux/plugins/tpm" ]; then
     echo "TPM already installed, skipping..."
 else
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-    echo "TPM installed. Plugins will be installed after tmux config is linked."
 fi
 
 # FZF Shell Integration
@@ -191,6 +225,36 @@ else
     rm lazygit.tar.gz lazygit
 fi
 
+# Desktop-only: OnlyOffice, Vesktop, Fonts, KDE settings
+if [ "$HAS_DISPLAY" = true ]; then
+    echo "=== Installing OnlyOffice ==="
+    mkdir -p -m 700 ~/.gnupg
+    gpg --no-default-keyring --keyring gnupg-ring:/tmp/onlyoffice.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys CB2DE8E5
+    chmod 644 /tmp/onlyoffice.gpg
+    sudo chown root:root /tmp/onlyoffice.gpg
+    sudo mv /tmp/onlyoffice.gpg /usr/share/keyrings/onlyoffice.gpg
+    echo 'deb [signed-by=/usr/share/keyrings/onlyoffice.gpg] https://download.onlyoffice.com/repo/debian squeeze main' | sudo tee /etc/apt/sources.list.d/onlyoffice.list
+    sudo apt-get update
+    sudo apt-get install -y onlyoffice-desktopeditors
+
+    echo "=== Installing Vesktop ==="
+    VESKTOP_VERSION=$(curl -s "https://api.github.com/repos/Vencord/Vesktop/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
+    wget -O /tmp/vesktop.deb "https://github.com/Vencord/Vesktop/releases/download/v${VESKTOP_VERSION}/vesktop_${VESKTOP_VERSION}_amd64.deb"
+    sudo dpkg -i /tmp/vesktop.deb
+    sudo apt-get install -f -y
+
+    echo "=== Installing JetBrains Mono Nerd Font ==="
+    mkdir -p ~/.local/share/fonts
+    wget -qO /tmp/JetBrainsMono.zip "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
+    unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono/
+    fc-cache -f
+
+    echo "=== Applying KDE desktop settings ==="
+    plasma-apply-lookandfeel --apply org.kde.breezedark.desktop
+    kscreen-doctor output.1.scale.1.5
+    sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+fi
+
 # Zoxide init
 echo "=== Configuring Zoxide ==="
 if ! grep -q "zoxide init zsh" ~/.zshrc; then
@@ -210,4 +274,5 @@ EOL
 fi
 
 echo "=== Installation complete! ==="
+echo "Desktop packages installed: $HAS_DISPLAY"
 echo "Please restart your terminal or run: exec zsh"

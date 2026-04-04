@@ -21,8 +21,8 @@ alias grep='rg'
 # dust (modern du replacement)
 alias du='dust'
 
-# bottom or btop (modern top replacement)
-alias top='btm'
+# btop (modern top replacement)
+alias top='btop'
 
 # zoxide (modern cd replacement)
 alias cd='z'

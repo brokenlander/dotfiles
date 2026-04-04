@@ -17,13 +17,13 @@ echo "Uninstalling terminal configuration..."
 restore_file() {
     local file=$1
     local backup="$BACKUP_DIR/$(basename "$file")"
-    
+
     # Remove symlink
     if [ -L "$file" ]; then
         rm "$file"
         echo -e "${YELLOW}Removed symlink${NC} $file"
     fi
-    
+
     # Restore from backup if available
     if [ -e "$backup" ]; then
         cp "$backup" "$file"
@@ -35,12 +35,20 @@ restore_file() {
 restore_file "$HOME/.gitconfig"
 restore_file "$HOME/.gitignore_global"
 
+# Remove Tmux configuration
+restore_file "$HOME/.tmux.conf"
+
+# Remove Starship configuration
+if [ -L "$HOME/.config/starship.toml" ]; then
+    rm "$HOME/.config/starship.toml"
+    echo -e "${YELLOW}Removed${NC} Starship config symlink"
+fi
+
 # Remove Neovim configuration symlink
 if [ -L "$HOME/.config/nvim" ]; then
     rm "$HOME/.config/nvim"
     echo -e "${YELLOW}Removed Neovim symlink${NC} $HOME/.config/nvim"
-    
-    # Restore from backup if available
+
     if [ -d "$BACKUP_DIR/nvim" ]; then
         mkdir -p "$HOME/.config"
         cp -r "$BACKUP_DIR/nvim" "$HOME/.config/"
@@ -48,42 +56,59 @@ if [ -L "$HOME/.config/nvim" ]; then
     fi
 fi
 
-# Clean up added source lines and configurations from .zshrc
+# Remove Kitty configuration symlink
+if [ -L "$HOME/.config/kitty/kitty.conf" ]; then
+    rm "$HOME/.config/kitty/kitty.conf"
+    echo -e "${YELLOW}Removed${NC} Kitty config symlink"
+fi
+
+# Remove Kate theme symlink
+if [ -L "$HOME/.local/share/org.kde.syntax-highlighting/themes/tokyo-night.theme" ]; then
+    rm "$HOME/.local/share/org.kde.syntax-highlighting/themes/tokyo-night.theme"
+    echo -e "${YELLOW}Removed${NC} Kate Tokyo Night theme symlink"
+fi
+
+# Clean up .zshrc
 if [ -f "$HOME/.zshrc" ]; then
     echo "Cleaning up .zshrc..."
-    
-    # Create a temporary file
+
     TEMP_FILE=$(mktemp)
-    
-    # Filter out lines added by various installers
-    sed '/# Added by dotfiles installer/d; 
-         /source \$HOME\/.dotfiles\/zsh\/aliases.zsh/d; 
-         /source \$HOME\/.dotfiles\/zsh\/key-bindings.zsh/d; 
-         /source \$ZSH\/oh-my-zsh.sh/d;
+
+    sed '/# Added by dotfiles installer/d;
+         /source \$HOME\/.dotfiles\/zsh\/aliases.zsh/d;
+         /source \$HOME\/.dotfiles\/zsh\/key-bindings.zsh/d;
+         /source \$HOME\/.dotfiles\/zsh\/integrations.zsh/d;
+         /# ZSH plugins (autosuggestions/d;
+         /ZSH_PLUGINS="\$HOME\/.zsh\/plugins"/d;
+         /zsh-autosuggestions\.zsh/d;
+         /zsh-syntax-highlighting\.zsh/d;
+         /fast-syntax-highlighting\.plugin\.zsh/d;
+         /zsh-completions\/src/d;
+         /autoload -Uz compinit/d;
+         /# Initialize completions/d;
          /# >>> mamba initialize >>>/,/# <<< mamba initialize <<</d' "$HOME/.zshrc" > "$TEMP_FILE"
-    
-    # Replace original file
+
     cp "$TEMP_FILE" "$HOME/.zshrc"
     rm "$TEMP_FILE"
-    
-    echo -e "${GREEN}Removed${NC} dotfiles-specific lines and configurations from .zshrc"
+
+    echo -e "${GREEN}Removed${NC} dotfiles-specific lines from .zshrc"
 fi
 
 # Remove ZSH configuration symlinks
-if [ -L "$HOME/.dotfiles/zsh/aliases.zsh" ]; then
-    rm "$HOME/.dotfiles/zsh/aliases.zsh"
-    echo -e "${YELLOW}Removed symlink${NC} $HOME/.dotfiles/zsh/aliases.zsh"
-fi
-
-if [ -L "$HOME/.dotfiles/zsh/key-bindings.zsh" ]; then
-    rm "$HOME/.dotfiles/zsh/key-bindings.zsh"
-    echo -e "${YELLOW}Removed symlink${NC} $HOME/.dotfiles/zsh/key-bindings.zsh"
-fi
+rm -f "$HOME/.dotfiles/zsh/aliases.zsh"
+rm -f "$HOME/.dotfiles/zsh/key-bindings.zsh"
+rm -f "$HOME/.dotfiles/zsh/integrations.zsh"
 
 # Remove modular configuration directory
 if [ -d "$HOME/.dotfiles" ]; then
     rm -rf "$HOME/.dotfiles"
     echo -e "${YELLOW}Removed${NC} $HOME/.dotfiles directory"
+fi
+
+# Remove ZSH plugins
+if [ -d "$HOME/.zsh/plugins" ]; then
+    rm -rf "$HOME/.zsh/plugins"
+    echo -e "${YELLOW}Removed${NC} ZSH plugins"
 fi
 
 # Restore .zshrc from backup if it exists
@@ -92,17 +117,14 @@ if [ -f "$BACKUP_DIR/.zshrc" ]; then
     echo -e "${GREEN}Restored${NC} original .zshrc from backup"
 fi
 
-# Remove micromamba from /opt
-if [ -d "/opt/micromamba" ]; then
-    echo "Removing micromamba installation..."
-    sudo rm -rf /opt/micromamba
-    echo -e "${YELLOW}Removed${NC} micromamba installation from /opt/micromamba"
+# Remove micromamba
+if [ -d "$HOME/micromamba" ]; then
+    rm -rf "$HOME/micromamba"
+    echo -e "${YELLOW}Removed${NC} micromamba"
 fi
-
-# Remove Oh-My-Zsh
-if [ -d "$HOME/.oh-my-zsh" ]; then
-    rm -rf "$HOME/.oh-my-zsh"
-    echo -e "${YELLOW}Removed${NC} Oh-My-Zsh from $HOME/.oh-my-zsh"
+if [ -f "$HOME/.local/bin/micromamba" ]; then
+    rm "$HOME/.local/bin/micromamba"
+    echo -e "${YELLOW}Removed${NC} micromamba binary"
 fi
 
 echo -e "\n${GREEN}Uninstallation complete!${NC}"
