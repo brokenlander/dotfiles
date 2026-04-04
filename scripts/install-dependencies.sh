@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+# No set -e — too many tools have non-zero exits that aren't real errors
 
 # Detect desktop environment
 HAS_DISPLAY=false
@@ -55,7 +55,7 @@ touch "$HOME/.zshrc"
 
 # Modern CLI replacements
 echo "=== Installing modern CLI tools ==="
-sudo apt install -y bat eza fd-find ripgrep zoxide git-delta tldr duf btop difftastic
+sudo apt install -y bat eza fd-find ripgrep zoxide git-delta tealdeer duf btop difftastic
 
 # Dust
 echo "=== Installing dust ==="
