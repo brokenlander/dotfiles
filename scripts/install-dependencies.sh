@@ -32,12 +32,12 @@ sudo apt-get full-upgrade -y
 
 # General tools (shared)
 echo "=== Installing general tools ==="
-sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq glow libudev-dev openssh-server autossh fastfetch
+sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq glow libudev-dev openssh-server autossh fastfetch cava
 
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
-    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme
+    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme
 
     # Zen Browser
     echo "=== Installing Zen Browser ==="
@@ -300,7 +300,16 @@ UDEV'
     plasma-apply-lookandfeel --apply org.kde.breezedark.desktop || echo "WARNING: Plasma not running, apply dark mode manually after login."
     kscreen-doctor output.1.scale.1.5 || echo "WARNING: Could not set display scale, set manually in System Settings > Display."
     kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus-Dark 2>/dev/null || true
+    kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorTheme Bibata-Modern-Ice 2>/dev/null || true
+    kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorSize 24 2>/dev/null || true
     sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+
+    # SDDM Tokyo Night login theme
+    if [ ! -d /usr/share/sddm/themes/tokyo-night-sddm ]; then
+        sudo git clone https://github.com/siddrs/tokyo-night-sddm.git /usr/share/sddm/themes/tokyo-night-sddm
+        sudo bash -c 'echo "QtVersion=6" >> /usr/share/sddm/themes/tokyo-night-sddm/metadata.desktop'
+        sudo kwriteconfig6 --file /etc/sddm.conf.d/10-theme.conf --group Theme --key Current tokyo-night-sddm
+    fi
 fi
 
 # Zoxide init

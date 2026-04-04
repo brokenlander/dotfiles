@@ -166,6 +166,18 @@ if [ -f "$DOTFILES/fastfetch/config.jsonc" ]; then
     create_symlink "$DOTFILES/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
 fi
 
+# Btop config + Tokyo Night theme (shared)
+if [ -f "$DOTFILES/btop/btop.conf" ]; then
+    mkdir -p "$HOME/.config/btop/themes"
+    create_symlink "$DOTFILES/btop/btop.conf" "$HOME/.config/btop/btop.conf"
+    create_symlink "$DOTFILES/btop/tokyo-night.theme" "$HOME/.config/btop/themes/tokyo-night.theme"
+fi
+
+# Cava config (shared)
+if [ -f "$DOTFILES/cava/config" ]; then
+    create_symlink "$DOTFILES/cava/config" "$HOME/.config/cava/config"
+fi
+
 if [ "$HAS_DISPLAY" != true ]; then
     echo "Skipping desktop configs (no display detected)"
 fi
