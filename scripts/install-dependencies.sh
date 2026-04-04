@@ -312,8 +312,6 @@ UDEV'
     plasma-apply-lookandfeel --apply org.kde.breezedark.desktop || echo "WARNING: Plasma not running, apply dark mode manually after login."
     kscreen-doctor output.1.scale.1.5 || echo "WARNING: Could not set display scale, set manually in System Settings > Display."
     kscreen-doctor output.1.mode.10 || echo "WARNING: Could not set 120Hz."
-    kscreen-doctor output.1.hdr.enable 2>/dev/null || true
-    kscreen-doctor output.1.wcg.enable 2>/dev/null || true
     kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus-Dark 2>/dev/null || true
     kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorTheme Bibata-Modern-Ice 2>/dev/null || true
     kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorSize 24 2>/dev/null || true
