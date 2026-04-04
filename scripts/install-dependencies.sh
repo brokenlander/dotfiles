@@ -253,10 +253,11 @@ fi
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing OnlyOffice ==="
     mkdir -p -m 700 ~/.gnupg
-    gpg --no-default-keyring --keyring gnupg-ring:/tmp/onlyoffice.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys CB2DE8E5
-    chmod 644 /tmp/onlyoffice.gpg
-    sudo chown root:root /tmp/onlyoffice.gpg
-    sudo mv /tmp/onlyoffice.gpg /usr/share/keyrings/onlyoffice.gpg
+    TMPKEYRING=$(mktemp /tmp/onlyoffice-keyring.XXXXXX.gpg)
+    gpg --no-default-keyring --keyring "gnupg-ring:$TMPKEYRING" --keyserver hkps://keyserver.ubuntu.com --recv-keys E09CA29F6E178040EF22B4098320CA65CB2DE8E5
+    chmod 644 "$TMPKEYRING"
+    sudo chown root:root "$TMPKEYRING"
+    sudo mv "$TMPKEYRING" /usr/share/keyrings/onlyoffice.gpg
     echo 'deb [signed-by=/usr/share/keyrings/onlyoffice.gpg] https://download.onlyoffice.com/repo/debian squeeze main' | sudo tee /etc/apt/sources.list.d/onlyoffice.list
     sudo apt-get update
     sudo apt-get install -y onlyoffice-desktopeditors

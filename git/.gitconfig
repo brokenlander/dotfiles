@@ -6,7 +6,7 @@
 # Replace with your actual personal details
 [user]
     name = Andrea Moccia
-    email = andrea.moccia@gmail.com
+    email = brokenlander@users.noreply.github.com
 
 # ========== CREDENTIAL HELPERS ==========
 # This section configures how Git authenticates with remote repositories
