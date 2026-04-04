@@ -88,6 +88,12 @@ autoload -Uz compinit && compinit
 source $HOME/.dotfiles/zsh/aliases.zsh
 source $HOME/.dotfiles/zsh/key-bindings.zsh
 source $HOME/.dotfiles/zsh/integrations.zsh
+# Set forge as default directory
+if [[ "$PWD" == "$HOME" && -z "$NVIM_SESSION" ]]; then
+  cd ~/forge
+fi
+# Zoxide must be last
+eval "$(zoxide init zsh)"
 EOL
     echo -e "${GREEN}Added${NC} plugin sourcing and dotfiles to ~/.zshrc"
 else

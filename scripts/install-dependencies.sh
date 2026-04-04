@@ -87,9 +87,10 @@ else
     curl -sS https://starship.rs/install.sh | sh -s -- -y
 fi
 
-# Git PPA (for latest version) + Neovim (Ubuntu repo is fine for 26.04+)
-echo "=== Installing Neovim and Git ==="
-timeout 30 sudo add-apt-repository -y ppa:git-core/ppa 2>/dev/null || echo "WARNING: Git PPA failed, will use Ubuntu repo version."
+# PPAs for latest versions (gracefully skip if not available for this release)
+echo "=== Adding PPAs ==="
+timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/stable 2>/dev/null || echo "WARNING: Neovim PPA not available, will use Ubuntu repo version."
+timeout 30 sudo add-apt-repository -y ppa:git-core/ppa 2>/dev/null || echo "WARNING: Git PPA not available, will use Ubuntu repo version."
 sudo apt update
 sudo apt install -y neovim git
 
@@ -315,31 +316,13 @@ UDEV'
     kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorSize 24 2>/dev/null || true
     sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
-    # SDDM Tokyo Night login theme
-    if [ ! -d /usr/share/sddm/themes/tokyo-night-sddm ]; then
-        sudo git clone https://github.com/siddrs/tokyo-night-sddm.git /usr/share/sddm/themes/tokyo-night-sddm
-        sudo bash -c 'echo "QtVersion=6" >> /usr/share/sddm/themes/tokyo-night-sddm/metadata.desktop'
-        sudo kwriteconfig6 --file /etc/sddm.conf.d/10-theme.conf --group Theme --key Current tokyo-night-sddm
-    fi
-fi
-
-# Zoxide init
-echo "=== Configuring Zoxide ==="
-if ! grep -q "zoxide init zsh" ~/.zshrc; then
-    echo 'eval "$(zoxide init zsh)"' >> ~/.zshrc
+    # Note: SDDM Tokyo Night theme doesn't work reliably on Plasma 6/Wayland
+    # Using default kubuntu SDDM theme instead
 fi
 
 # Forge directory
 echo "=== Setting up forge directory ==="
 mkdir -p ~/forge
-if ! grep -q "Set forge as default directory" ~/.zshrc; then
-    cat >> ~/.zshrc << 'EOL'
-# Set forge as default directory
-if [[ "$PWD" == "$HOME" && -z "$NVIM_SESSION" ]]; then
-  cd ~/forge
-fi
-EOL
-fi
 
 echo "=== Installation complete! ==="
 echo "Desktop packages installed: $HAS_DISPLAY"
