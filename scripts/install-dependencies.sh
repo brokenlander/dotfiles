@@ -37,7 +37,7 @@ sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq gl
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
-    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme peek onedrive
+    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme peek onedrive obs-studio
 
     # Zen Browser
     echo "=== Installing Zen Browser ==="
