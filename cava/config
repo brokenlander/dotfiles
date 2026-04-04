@@ -1,6 +1,6 @@
 [general]
-bars = 60
-bar_width = 2
+bars = 0
+bar_width = 1
 bar_spacing = 1
 
 [color]
