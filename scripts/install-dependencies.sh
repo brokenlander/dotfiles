@@ -32,12 +32,12 @@ sudo apt-get full-upgrade -y
 
 # General tools (shared)
 echo "=== Installing general tools ==="
-sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq glow libudev-dev openssh-server autossh
+sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq glow libudev-dev openssh-server autossh fastfetch
 
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
-    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar
+    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme
 
     # Zen Browser
     echo "=== Installing Zen Browser ==="
@@ -299,6 +299,7 @@ UDEV'
     echo "=== Applying KDE desktop settings ==="
     plasma-apply-lookandfeel --apply org.kde.breezedark.desktop || echo "WARNING: Plasma not running, apply dark mode manually after login."
     kscreen-doctor output.1.scale.1.5 || echo "WARNING: Could not set display scale, set manually in System Settings > Display."
+    kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus-Dark 2>/dev/null || true
     sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 fi
 

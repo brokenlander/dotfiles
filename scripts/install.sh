@@ -159,7 +159,14 @@ if [ "$HAS_DISPLAY" = true ]; then
         mkdir -p "$HOME/.local/share/org.kde.syntax-highlighting/themes"
         create_symlink "$DOTFILES/kate/tokyo-night.theme" "$HOME/.local/share/org.kde.syntax-highlighting/themes/tokyo-night.theme"
     fi
-else
+fi
+
+# Fastfetch config (shared — useful on servers too)
+if [ -f "$DOTFILES/fastfetch/config.jsonc" ]; then
+    create_symlink "$DOTFILES/fastfetch/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+fi
+
+if [ "$HAS_DISPLAY" != true ]; then
     echo "Skipping desktop configs (no display detected)"
 fi
 
