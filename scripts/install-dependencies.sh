@@ -198,16 +198,18 @@ else
     fi
 fi
 
-# Agency Agents (Claude Code agent personalities)
+# Agency Agents (Claude Code agent personalities) — managed by cyan repo
 echo "=== Installing Agency Agents ==="
 if [ -d "$HOME/.claude/agents" ] && [ "$(ls -A $HOME/.claude/agents 2>/dev/null)" ]; then
     echo "Agency agents already installed, skipping..."
 else
-    AGENCY_TMP=$(mktemp -d)
-    git clone https://github.com/msitarzewski/agency-agents.git "$AGENCY_TMP"
-    mkdir -p "$HOME/.claude/agents"
-    cp -r "$AGENCY_TMP"/agents/* "$HOME/.claude/agents/" 2>/dev/null || cp -r "$AGENCY_TMP"/*.md "$HOME/.claude/agents/" 2>/dev/null || true
-    rm -rf "$AGENCY_TMP"
+    CYAN_REPO="$HOME/forge/cyan"
+    if [ -d "$CYAN_REPO/agents" ]; then
+        mkdir -p "$HOME/.claude/agents"
+        cp -r "$CYAN_REPO"/agents/* "$HOME/.claude/agents/"
+    else
+        echo "Cyan repo not found at $CYAN_REPO — clone https://github.com/brokenlander/cyan first"
+    fi
 fi
 
 # TPM (Tmux Plugin Manager)
