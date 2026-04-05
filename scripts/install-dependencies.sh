@@ -37,7 +37,17 @@ sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq gl
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
-    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio
+    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio mangohud gamemode
+
+    # ProtonUp-Qt (Proton-GE manager) — AppImage, no repo available
+    if [ ! -f /usr/local/bin/protonup-qt ]; then
+        PROTONUP_URL=$(curl -s https://api.github.com/repos/DavidoTek/ProtonUp-Qt/releases/latest | command grep -o 'https://.*AppImage"' | tr -d '"')
+        if [ -n "$PROTONUP_URL" ]; then
+            wget -O /tmp/protonup-qt.AppImage "$PROTONUP_URL"
+            sudo mv /tmp/protonup-qt.AppImage /usr/local/bin/protonup-qt
+            sudo chmod +x /usr/local/bin/protonup-qt
+        fi
+    fi
 
     # Zen Browser
     echo "=== Installing Zen Browser ==="
