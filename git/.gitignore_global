@@ -1,6 +1,12 @@
 # Global .gitignore file
 # Excludes files and directories across all Git repositories
 
+# ========== CLAUDE CODE ==========
+.claude/
+**/.claude/settings.local.json
+CLAUDE.md
+claude.md
+
 # ========== OPERATING SYSTEM FILES ==========
 
 # macOS

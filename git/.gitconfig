@@ -33,6 +33,7 @@
     # Delta provides enhanced diff output with syntax highlighting
     # If delta is not installed, Git will fall back to standard pager
     pager = delta
+	hooksPath = /home/brokenlander/.git-hooks/
 
 [init]
     # Sets the default branch name when creating new repositories
