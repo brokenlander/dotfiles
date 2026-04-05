@@ -46,3 +46,7 @@ alias vim='nvim'
 
 # lazygit
 alias lg='lazygit'
+
+# claude code
+alias cld='claude --dangerously-skip-permissions'
+alias cldd='claude --dangerously-skip-permissions --channels plugin:discord@claude-plugins-official'
