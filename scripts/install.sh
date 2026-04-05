@@ -90,7 +90,7 @@ source $HOME/.dotfiles/zsh/key-bindings.zsh
 source $HOME/.dotfiles/zsh/integrations.zsh
 # Set forge as default directory
 if [[ "$PWD" == "$HOME" && -z "$NVIM_SESSION" ]]; then
-  cd ~/forge
+  builtin cd ~/forge
 fi
 # Zoxide must be last
 eval "$(zoxide init zsh)"
