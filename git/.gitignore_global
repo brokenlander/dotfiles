@@ -219,11 +219,8 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
-# Version control files
+# Version control internals
 .git
-.gitignore
-.gitattributes
-.gitkeep
 
 # Python environment files
 .python-version
