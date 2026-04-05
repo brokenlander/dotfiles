@@ -13,6 +13,9 @@ setopt HIST_IGNORE_SPACE
 # Ensure ~/.local/bin is on PATH (pipx, claude, uv, etc.)
 export PATH="$HOME/.local/bin:$PATH"
 
+# MangoHud — auto-enable for all Vulkan/OpenGL games
+export MANGOHUD=1
+
 # Terminal Color Support - Enable truecolor (24-bit) support
 export COLORTERM=truecolor
 
