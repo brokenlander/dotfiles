@@ -53,10 +53,6 @@ onedrive
 nano ~/.config/onedrive/sync_list    # add folders to sync
 onedrive --sync --resync
 
-# Zen settings from Windows partition
-udisksctl mount -b /dev/nvme0n1p3
-~/dotfiles/scripts/sync-zen-settings.sh
-
 # Timeshift — first snapshot
 sudo timeshift-gtk
 ```
