@@ -1,0 +1,15 @@
+#!/bin/bash
+# Global commit-msg hook: block Claude/AI references in commit messages
+
+PATTERNS="claude|anthropic"
+
+if grep -iE "$PATTERNS" "$1" > /dev/null 2>&1; then
+    echo "BLOCKED: Commit message contains forbidden patterns."
+    echo "Matches:"
+    grep -iE "$PATTERNS" "$1"
+    echo ""
+    echo "Remove these references from your commit message."
+    exit 1
+fi
+
+exit 0

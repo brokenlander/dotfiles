@@ -50,3 +50,7 @@ alias lg='lazygit'
 # claude code
 alias cld='claude --dangerously-skip-permissions'
 alias cldd='claude --dangerously-skip-permissions --channels plugin:discord@claude-plugins-official'
+
+# obsbot camera tracking
+alias trackon='t4l tracking normal'
+alias trackoff='t4l tracking static'
