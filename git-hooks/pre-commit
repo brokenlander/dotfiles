@@ -1,0 +1,23 @@
+#!/bin/bash
+# Global pre-commit hook: block Claude/AI references from being committed
+
+# Patterns to reject in staged file contents
+PATTERNS="claude|anthropic"
+
+# Check if CLAUDE.md is staged
+if git diff --cached --name-only | grep -qi "^claude\.md$"; then
+    echo "BLOCKED: CLAUDE.md is staged for commit. Remove it with: git reset HEAD CLAUDE.md"
+    exit 1
+fi
+
+# Check staged file contents for forbidden patterns
+MATCHES=$(git diff --cached --diff-filter=ACM -U0 | grep -iE "^\+" | grep -v "^+++" | grep -iE "$PATTERNS" || true)
+if [ -n "$MATCHES" ]; then
+    echo "BLOCKED: Staged changes contain forbidden patterns:"
+    echo "$MATCHES"
+    echo ""
+    echo "Remove these references before committing."
+    exit 1
+fi
+
+exit 0

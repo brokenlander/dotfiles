@@ -13,8 +13,13 @@ setopt HIST_IGNORE_SPACE
 # Ensure ~/.local/bin is on PATH (pipx, claude, uv, etc.)
 export PATH="$HOME/.local/bin:$PATH"
 
-# MangoHud — auto-enable for all Vulkan/OpenGL games
-export MANGOHUD=1
+# MangoHud — auto-enable for all Vulkan/OpenGL games (desktop only)
+if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+    export MANGOHUD=1
+fi
+
+# Silence zoxide doctor warning (it works fine, just nags in subshells)
+export _ZO_DOCTOR=0
 
 # Terminal Color Support - Enable truecolor (24-bit) support
 export COLORTERM=truecolor

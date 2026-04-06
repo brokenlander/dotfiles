@@ -14,6 +14,11 @@ if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ] || [ -n "$XDG_CURRENT_DESKTOP"
     HAS_DISPLAY=true
 fi
 
+IS_KDE=false
+if [ "$XDG_CURRENT_DESKTOP" = "KDE" ]; then
+    IS_KDE=true
+fi
+
 # Print paths for debugging
 echo "Script directory: $SCRIPT_DIR"
 echo "Dotfiles directory: $DOTFILES"
@@ -124,6 +129,14 @@ else
     echo -e "${RED}Error:${NC} $DOTFILES/git/.gitignore_global not found!"
 fi
 
+# Git hooks (global — referenced by .gitconfig hooksPath)
+if [ -d "$DOTFILES/git-hooks" ]; then
+    mkdir -p "$HOME/.git-hooks"
+    for hook in "$DOTFILES/git-hooks"/*; do
+        create_symlink "$hook" "$HOME/.git-hooks/$(basename "$hook")"
+    done
+fi
+
 # -------- Tmux Configuration --------
 echo "Setting up Tmux configuration..."
 
@@ -161,9 +174,11 @@ if [ "$HAS_DISPLAY" = true ]; then
     fi
 
     # Kate Tokyo Night theme
-    if [ -f "$DOTFILES/kate/tokyo-night.theme" ]; then
-        mkdir -p "$HOME/.local/share/org.kde.syntax-highlighting/themes"
-        create_symlink "$DOTFILES/kate/tokyo-night.theme" "$HOME/.local/share/org.kde.syntax-highlighting/themes/tokyo-night.theme"
+    if [ "$IS_KDE" = true ]; then
+        if [ -f "$DOTFILES/kate/tokyo-night.theme" ]; then
+            mkdir -p "$HOME/.local/share/org.kde.syntax-highlighting/themes"
+            create_symlink "$DOTFILES/kate/tokyo-night.theme" "$HOME/.local/share/org.kde.syntax-highlighting/themes/tokyo-night.theme"
+        fi
     fi
 fi
 
@@ -179,13 +194,11 @@ if [ -f "$DOTFILES/btop/btop.conf" ]; then
     create_symlink "$DOTFILES/btop/tokyo-night.theme" "$HOME/.config/btop/themes/tokyo-night.theme"
 fi
 
-# Cava config (shared)
-if [ -f "$DOTFILES/cava/config" ]; then
-    create_symlink "$DOTFILES/cava/config" "$HOME/.config/cava/config"
-fi
-
-if [ "$HAS_DISPLAY" != true ]; then
-    echo "Skipping desktop configs (no display detected)"
+# Cava config (desktop — audio visualizer)
+if [ "$HAS_DISPLAY" = true ]; then
+    if [ -f "$DOTFILES/cava/config" ]; then
+        create_symlink "$DOTFILES/cava/config" "$HOME/.config/cava/config"
+    fi
 fi
 
 # -------- Install Neovim plugins --------

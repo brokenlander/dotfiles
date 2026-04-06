@@ -7,6 +7,11 @@ if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ] || [ -n "$XDG_CURRENT_DESKTOP"
     HAS_DISPLAY=true
 fi
 
+IS_KDE=false
+if [ "$XDG_CURRENT_DESKTOP" = "KDE" ]; then
+    IS_KDE=true
+fi
+
 echo "=== Starting dependency installation ==="
 echo "Desktop detected: $HAS_DISPLAY"
 
@@ -37,17 +42,7 @@ sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq gl
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
-    sudo apt-get install -y kitty keepassxc haruna steam-installer ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio mangohud gamemode
-
-    # ProtonUp-Qt (Proton-GE manager) — AppImage, no repo available
-    if [ ! -f /usr/local/bin/protonup-qt ]; then
-        PROTONUP_URL=$(curl -s https://api.github.com/repos/DavidoTek/ProtonUp-Qt/releases/latest | command grep -o 'https://.*AppImage"' | tr -d '"')
-        if [ -n "$PROTONUP_URL" ]; then
-            wget -O /tmp/protonup-qt.AppImage "$PROTONUP_URL"
-            sudo mv /tmp/protonup-qt.AppImage /usr/local/bin/protonup-qt
-            sudo chmod +x /usr/local/bin/protonup-qt
-        fi
-    fi
+    sudo apt-get install -y kitty keepassxc haruna ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio xdotool librsvg2-bin
 
     # Zen Browser
     echo "=== Installing Zen Browser ==="
@@ -303,34 +298,23 @@ if [ "$HAS_DISPLAY" = true ]; then
     unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono/
     fc-cache -f
 
-    echo "=== Installing Keymapp (ZSA keyboard firmware) ==="
-    if [ ! -f /opt/keymapp/keymapp ]; then
-        wget -O /tmp/keymapp.tar.gz "https://oryx.nyc3.cdn.digitaloceanspaces.com/keymapp/keymapp-latest.tar.gz"
-        sudo mkdir -p /opt/keymapp
-        sudo tar -xzf /tmp/keymapp.tar.gz -C /opt/keymapp/
-        sudo ln -sf /opt/keymapp/keymapp /usr/local/bin/keymapp
+    if [ "$IS_KDE" = true ]; then
+        echo "=== Installing Krohnkite (dynamic tiling) ==="
+        if ! kpackagetool6 -t KWin/Script -l 2>/dev/null | command grep -q krohnkite; then
+            wget -O /tmp/krohnkite.kwinscript "https://codeberg.org/anametologin/Krohnkite/releases/download/0.9.9.2/krohnkite-0.9.9.2-1d7fd74.kwinscript"
+            kpackagetool6 -t KWin/Script -i /tmp/krohnkite.kwinscript
+            kwriteconfig6 --file kwinrc --group Plugins --key krohnkiteEnabled true
+            qdbus6 org.kde.KWin /KWin reconfigure 2>/dev/null || true
+        fi
     fi
-    # ZSA udev rules
-    if [ ! -f /etc/udev/rules.d/50-zsa.rules ]; then
-        sudo bash -c 'cat > /etc/udev/rules.d/50-zsa.rules << UDEV
-SUBSYSTEM=="usb", ATTR{idVendor}=="3297", GROUP="plugdev"
-SUBSYSTEM=="usb", ATTR{idVendor}=="3297", ATTR{idProduct}=="0791", GROUP="plugdev"
-UDEV'
-        sudo udevadm control --reload-rules
+
+    if [ "$IS_KDE" = true ]; then
+        echo "=== Applying KDE desktop settings ==="
+        plasma-apply-lookandfeel --apply org.kde.breezedark.desktop || echo "WARNING: Plasma not running, apply dark mode manually after login."
+        kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus-Dark 2>/dev/null || true
+        kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorTheme Bibata-Modern-Ice 2>/dev/null || true
+        kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorSize 24 2>/dev/null || true
     fi
-    sudo usermod -aG plugdev "$USER"
-
-    echo "=== Applying KDE desktop settings ==="
-    plasma-apply-lookandfeel --apply org.kde.breezedark.desktop || echo "WARNING: Plasma not running, apply dark mode manually after login."
-    kscreen-doctor output.1.scale.1.5 || echo "WARNING: Could not set display scale, set manually in System Settings > Display."
-    kscreen-doctor output.1.mode.10 || echo "WARNING: Could not set 120Hz."
-    kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus-Dark 2>/dev/null || true
-    kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorTheme Bibata-Modern-Ice 2>/dev/null || true
-    kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorSize 24 2>/dev/null || true
-    sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
-
-    # Note: SDDM Tokyo Night theme doesn't work reliably on Plasma 6/Wayland
-    # Using default kubuntu SDDM theme instead
 fi
 
 # Forge directory
