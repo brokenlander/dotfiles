@@ -37,7 +37,7 @@ sudo apt-get full-upgrade -y
 
 # General tools (shared)
 echo "=== Installing general tools ==="
-sudo apt-get install -y curl fzf python3 pipx xclip xsel unzip rclone tmux jq glow libudev-dev openssh-server autossh fastfetch cava cmatrix cbonsai nvtop gping
+sudo apt-get install -y curl fzf python3 pipx xclip xsel wl-clipboard unzip rclone tmux jq glow libudev-dev openssh-server autossh fastfetch cava cmatrix cbonsai nvtop gping
 
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
