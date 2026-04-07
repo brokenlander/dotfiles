@@ -76,6 +76,28 @@ create_symlink "$DOTFILES/zsh/integrations.zsh" "$HOME/.dotfiles/zsh/integration
 # Backup the existing .zshrc
 backup_file "$HOME/.zshrc"
 
+# Clean up conflicting configs (oh-my-zsh, nvm) from .zshrc
+if [ -f "$HOME/.zshrc" ] && grep -q "oh-my-zsh\|nvm" "$HOME/.zshrc" 2>/dev/null; then
+    echo "Cleaning up conflicting configs from .zshrc..."
+    sed -i '/oh-my-zsh/d; /ZSH_THEME/d; /DISABLE_.*UPDATE/d; /HIST_STAMPS/d; /^plugins=/d; /^export ZSH=/d' "$HOME/.zshrc"
+    sed -i '/nvm\.sh/d; /NVM_DIR/d; /nvm use/d; /nvm bash_completion/d' "$HOME/.zshrc"
+    # Remove empty lines left behind (collapse multiple blank lines to one)
+    sed -i '/^$/N;/^\n$/d' "$HOME/.zshrc"
+    echo -e "${GREEN}Removed${NC} oh-my-zsh and nvm references from .zshrc"
+fi
+
+# Remove oh-my-zsh directory if present (replaced by starship + manual plugins)
+if [ -d "$HOME/.oh-my-zsh" ]; then
+    rm -rf "$HOME/.oh-my-zsh"
+    echo -e "${GREEN}Removed${NC} ~/.oh-my-zsh (replaced by starship + manual plugins)"
+fi
+
+# Remove nvm if present (replaced by fnm)
+if [ -d "$HOME/.nvm" ]; then
+    rm -rf "$HOME/.nvm"
+    echo -e "${GREEN}Removed${NC} ~/.nvm (replaced by fnm)"
+fi
+
 # Add ZSH plugin sourcing and dotfiles to .zshrc if not already present
 if ! grep -q "source \$HOME/.dotfiles/zsh/aliases.zsh" "$HOME/.zshrc" 2>/dev/null; then
     cat >> "$HOME/.zshrc" << 'EOL'
