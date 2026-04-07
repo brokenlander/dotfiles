@@ -1,6 +1,7 @@
 # Starship Prompt — Tokyo Night minimal single-line
 
 format = """
+$hostname\
 $directory\
 $git_branch\
 $git_status\
@@ -13,6 +14,11 @@ $character"""
 [character]
 success_symbol = "[❯](#7aa2f7)"
 error_symbol = "[❯](#f7768e)"
+
+[hostname]
+ssh_only = false
+style = "#565f89"
+format = "[$hostname]($style):"
 
 [directory]
 style = "bold #769ff0"
