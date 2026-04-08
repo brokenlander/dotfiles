@@ -1,6 +1,8 @@
 # Starship Prompt — Tokyo Night minimal single-line
 
-format = """
+add_newline = false
+
+format = """\
 $hostname\
 $directory\
 $git_branch\
