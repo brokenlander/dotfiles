@@ -7,7 +7,8 @@ $git_branch\
 $git_status\
 $python\
 $nodejs\
-$docker_context\
+$kubernetes\
+$jobs\
 $cmd_duration\
 $character"""
 
@@ -26,7 +27,7 @@ truncation_length = 3
 truncate_to_repo = true
 
 [git_branch]
-symbol = " "
+symbol = " "
 style = "#bb9af7"
 
 [git_status]
@@ -39,17 +40,25 @@ staged = "+${count}"
 untracked = "?${count}"
 
 [python]
-symbol = " "
+symbol = " "
 style = "#9ece6a"
-format = "[$symbol($virtualenv) ]($style)"
+format = "[($symbol$virtualenv )]($style)"
 
 [nodejs]
-symbol = " "
+symbol = " "
 style = "#9ece6a"
+format = "[$symbol]($style)"
 
-[docker_context]
-symbol = " "
+[kubernetes]
+disabled = false
+detect_env_vars = ["KUBECONFIG"]
 style = "#7dcfff"
+format = "[$symbol$context(/$namespace)]($style) "
+
+[jobs]
+style = "#7dcfff"
+symbol = "&"
+format = "[$symbol$number]($style) "
 
 [line_break]
 disabled = true
