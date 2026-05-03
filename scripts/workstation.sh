@@ -1,6 +1,6 @@
 #!/bin/bash
 # Workstation-specific setup
-# Hardware: RTX 5090, Elgato Wave 3, OBSBOT Tiny 2, ZSA Voyager,
+# Hardware: RTX 5090, Elgato Wave 3, Logitech webcam, ZSA Voyager,
 #           Corsair cooling (OpenLinkHub), 1440p 120Hz monitor
 # Only run this on the primary workstation — not on laptops or servers.
 
@@ -103,63 +103,74 @@ EOF
     echo -e "${GREEN}Wave 3 WirePlumber fix applied.${NC}"
 fi
 
-# ========== OBSBOT Tiny 2 (Tiny4Linux CLI) ==========
-echo "=== OBSBOT Tiny 2 ==="
-if command -v t4l &>/dev/null; then
-    echo "Tiny4Linux already installed, skipping..."
+# ========== Block Chromium/Electron WebRTC mic auto-gain ==========
+# Vesktop/Discord/Slack/Teams' Chromium WebRTC AGC reaches into the
+# ALSA hardware mixer and ducks the mic, ignoring the in-app toggle
+# (Vesktop bug Vencord/Vesktop#161). The pipewire-pulse `block-source-volume`
+# quirk drops volume-change requests only — capture still works.
+echo "=== Block Chromium mic auto-gain ==="
+PULSE_QUIRK_CONF="$HOME/.config/pipewire/pipewire-pulse.conf.d/10-block-mic-volume.conf"
+if [ -f "$PULSE_QUIRK_CONF" ]; then
+    echo "Mic auto-adjust quirk already configured, skipping..."
 else
-    # Install Rust if needed
-    if ! command -v cargo &>/dev/null; then
-        echo "Installing Rust (needed for Tiny4Linux)..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        source "$HOME/.cargo/env"
-    fi
-
-    sudo apt-get install -y libudev-dev pkg-config
-    sudo git clone https://github.com/OpenFoxes/Tiny4Linux.git /tmp/Tiny4Linux
-    cd /tmp/Tiny4Linux
-    cargo build --release --bin tiny4linux-cli --features="cli"
-    sudo cp target/release/tiny4linux-cli /usr/local/bin/
-    sudo ln -sf /usr/local/bin/tiny4linux-cli /usr/local/bin/t4l
-    sudo rm -rf /tmp/Tiny4Linux
-    echo -e "${GREEN}Tiny4Linux installed.${NC} Usage: t4l tracking normal/static, t4l info"
+    mkdir -p "$(dirname "$PULSE_QUIRK_CONF")"
+    cat > "$PULSE_QUIRK_CONF" << 'EOF'
+pulse.rules = [
+    {
+        matches = [ { application.name = "~Chromium.*" } ]
+        actions = { quirks = [ block-source-volume ] }
+    }
+    {
+        matches = [
+            { application.process.binary = "vesktop" }
+            { application.process.binary = "Discord" }
+            { application.process.binary = "discord" }
+            { application.process.binary = "slack" }
+            { application.process.binary = "teams-for-linux" }
+        ]
+        actions = { quirks = [ block-source-volume ] }
+    }
+]
+EOF
+    systemctl --user restart pipewire-pulse 2>/dev/null || true
+    echo -e "${GREEN}Mic auto-adjust quirk applied.${NC}"
 fi
 
-# ========== OBSBOT Control GUI ==========
-echo "=== OBSBOT Control GUI ==="
-if [ -f "$HOME/.local/bin/obsbot-gui" ]; then
-    echo "OBSBOT Control GUI already installed, skipping..."
+# ========== Logitech webcam (cameractrls — Linux camera GUI) ==========
+echo "=== cameractrls ==="
+if [ -L "$HOME/.local/bin/cameractrls" ]; then
+    echo "cameractrls already installed, skipping..."
 else
-    sudo apt-get install -y qt6-base-dev qt6-multimedia-dev libgl1-mesa-dev
-    if [ ! -d "/opt/obsbot-camera-control" ]; then
-        sudo git clone https://github.com/aaronsb/obsbot-camera-control.git /opt/obsbot-camera-control
+    sudo apt-get install -y v4l-utils python3-gi gir1.2-gtk-4.0 || \
+        sudo apt-get install -y v4l-utils python3-gi gir1.2-gtk-3.0
+    mkdir -p "$HOME/.local/bin" "$HOME/.local/share" \
+             "$HOME/.local/share/applications" \
+             "$HOME/.local/share/icons/hicolor/scalable/apps"
+    git clone --depth 1 https://github.com/soyersoyer/cameractrls.git \
+        "$HOME/.local/share/cameractrls"
+    ln -sf "$HOME/.local/share/cameractrls/cameractrls.py" "$HOME/.local/bin/cameractrls"
+    # Prefer GTK4 frontend, fall back to GTK3 if gir1.2-gtk-4.0 isn't available
+    if dpkg -s gir1.2-gtk-4.0 &>/dev/null; then
+        ln -sf "$HOME/.local/share/cameractrls/cameractrlsgtk4.py" "$HOME/.local/bin/cameractrls-gtk"
+    else
+        ln -sf "$HOME/.local/share/cameractrls/cameractrlsgtk.py" "$HOME/.local/bin/cameractrls-gtk"
     fi
-    cd /opt/obsbot-camera-control
-    ./build.sh build --confirm
-    ./build.sh install --confirm
-    sudo cp sdk/v1.0.2/lib/libdev.so.1.0.2 /usr/lib/
-    sudo ln -sf /usr/lib/libdev.so.1.0.2 /usr/lib/libdev.so.1
-    sudo ln -sf /usr/lib/libdev.so.1.0.2 /usr/lib/libdev.so
-    sudo ldconfig
-
-    # Desktop icon — KDE needs absolute PNG path + matching StartupWMClass
-    mkdir -p "$HOME/.local/share/icons/hicolor/256x256/apps"
-    rsvg-convert -w 256 -h 256 /opt/obsbot-camera-control/resources/icons/camera.svg \
-        > "$HOME/.local/share/icons/hicolor/256x256/apps/obsbot-gui.png"
-    cat > "$HOME/.local/share/applications/obsbot-gui.desktop" << DESKTOP
+    cp "$HOME/.local/share/cameractrls/pkg/hu.irl.cameractrls.svg" \
+       "$HOME/.local/share/icons/hicolor/scalable/apps/cameractrls.svg"
+    cat > "$HOME/.local/share/applications/cameractrls.desktop" << DESKTOP
 [Desktop Entry]
-Name=OBSBOT Control
-Comment=Control OBSBOT camera settings
-Exec=env QT_MEDIA_BACKEND=ffmpeg $HOME/.local/bin/obsbot-gui
-Icon=$HOME/.local/share/icons/hicolor/256x256/apps/obsbot-gui.png
+Name=Cameractrls
+Comment=Camera controls for UVC webcams
+Exec=$HOME/.local/bin/cameractrls-gtk
+Icon=cameractrls
 Terminal=false
 Type=Application
 Categories=Video;AudioVideo;Utility;
-Keywords=camera;obsbot;webcam;
-StartupWMClass=obsbot-gui
+Keywords=camera;webcam;v4l2;uvc;
+StartupWMClass=cameractrlsgtk
 DESKTOP
     update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null
-    echo -e "${GREEN}OBSBOT Control GUI installed.${NC}"
+    echo -e "${GREEN}cameractrls installed.${NC}"
 fi
 
 # ========== Gaming (Steam, MangoHud, Gamemode, ProtonUp-Qt) ==========

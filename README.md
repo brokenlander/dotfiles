@@ -37,7 +37,6 @@ Hardware-specific setup for the primary rig:
 - OpenLinkHub (Corsair iCUE alternative)
 - Keymapp + udev rules (ZSA Voyager keyboard)
 - Elgato Wave 3 WirePlumber fix (mic silence bug)
-- OBSBOT Tiny 2 + Tiny4Linux CLI (AI tracking control)
 - CUDA toolkit 13.1
 
 Voice services (ASR/TTS) are managed separately — see `~/forge/voice/README.md`.
@@ -101,7 +100,7 @@ sudo timeshift-gtk
 |-----------|------|
 | GPU | NVIDIA RTX 5090 (driver 590-open, CUDA 13.1) |
 | Mic | Elgato Wave 3 (WirePlumber always-process fix) |
-| Camera | OBSBOT Tiny 2 (Tiny4Linux CLI for tracking) |
+| Camera | Logitech UVC webcam (cameractrls GUI for settings) |
 | Keyboard | ZSA Voyager (Keymapp + udev rules) |
 | Cooling | Corsair (OpenLinkHub) |
 | Gaming | Steam, MangoHud, Gamemode, ProtonUp-Qt |
