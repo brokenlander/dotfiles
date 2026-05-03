@@ -52,7 +52,3 @@ alias cld='claude --dangerously-skip-permissions'
 alias cldc='claude --dangerously-skip-permissions --continue'
 alias cldd='claude --dangerously-skip-permissions --channels plugin:discord@claude-plugins-official'
 alias clddc='claude --dangerously-skip-permissions --channels plugin:discord@claude-plugins-official --continue'
-
-# obsbot camera tracking
-alias trackon='t4l tracking normal'
-alias trackoff='t4l tracking static'
