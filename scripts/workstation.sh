@@ -44,6 +44,24 @@ kscreen-doctor output.1.mode.10 || echo "WARNING: Could not set 120Hz."
 echo "=== Disabling sleep/suspend (always-on workstation) ==="
 sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
+# ========== Disable screen autolock + idle blanking ==========
+# Workstation never auto-locks — only manual lock (Meta+L).
+echo "=== Disabling screen autolock ==="
+mkdir -p "$HOME/.config"
+KSL="$HOME/.config/kscreenlockerrc"
+kwriteconfig6 --file "$KSL" --group Daemon --key Autolock false
+kwriteconfig6 --file "$KSL" --group Daemon --key LockOnResume false
+# Powerdevil: never dim, blank, suspend, or turn off display on AC
+PDV="$HOME/.config/powerdevilrc"
+for action in DimDisplay DPMSControl SuspendSession TurnOffDisplay; do
+    kwriteconfig6 --file "$PDV" --group AC --group "$action" --key idleTime ""
+    kwriteconfig6 --file "$PDV" --group AC --group "$action" --key UseProfileDefaults false
+done
+# Reload ksmserver / powerdevil to pick up changes
+qdbus6 org.kde.ksmserver /KSMServer org.kde.KSMServerInterface.reloadConfig 2>/dev/null || true
+qdbus6 org.kde.Solid.PowerManagement /org/kde/Solid/PowerManagement refreshStatus 2>/dev/null || true
+echo -e "${GREEN}Screen autolock disabled.${NC}"
+
 # ========== OpenLinkHub (Corsair cooling) ==========
 echo "=== OpenLinkHub ==="
 if command -v OpenLinkHub &>/dev/null || dpkg -l openlinkhub 2>/dev/null | command grep -q "^ii"; then
