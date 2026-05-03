@@ -173,6 +173,25 @@ DESKTOP
     echo -e "${GREEN}cameractrls installed.${NC}"
 fi
 
+# ========== Apply optimal V4L2 settings to Logitech UVC webcam ==========
+# Idempotent: re-running just re-asserts the same controls. Logitech
+# UVC cams persist these in firmware across reboots.
+#   - power_line_frequency=60_hz   anti-flicker for 60Hz mains (Canada/US)
+#   - exposure_dynamic_framerate=0 lock 30fps (no slow-shutter drops)
+#   - sharpness=100                less haloing than the 128 default
+echo "=== Logitech webcam settings ==="
+LOGI_CAM=$(v4l2-ctl --list-devices 2>/dev/null \
+    | awk '/HD Pro Webcam|BRIO|C922|C925|StreamCam|MX BRIO/{getline; print $1; exit}')
+if [ -n "$LOGI_CAM" ] && [ -L "$HOME/.local/bin/cameractrls" ]; then
+    PYTHONWARNINGS=ignore "$HOME/.local/bin/cameractrls" -d "$LOGI_CAM" \
+        -c power_line_frequency=60_hz,exposure_dynamic_framerate=0,sharpness=100 \
+        >/dev/null 2>&1 \
+        && echo -e "${GREEN}Camera settings applied to $LOGI_CAM.${NC}" \
+        || echo -e "${YELLOW}Camera busy or not ready; rerun later.${NC}"
+else
+    echo "No Logitech webcam detected; skipping camera settings."
+fi
+
 # ========== Gaming (Steam, MangoHud, Gamemode, ProtonUp-Qt) ==========
 echo "=== Gaming packages ==="
 sudo apt-get install -y steam-installer mangohud gamemode
