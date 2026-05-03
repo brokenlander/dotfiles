@@ -81,7 +81,7 @@ Global hooks live in `git-hooks/` and are symlinked to `~/.git-hooks/` (referenc
 
 **Desktop** (auto-detected): Kitty (Tokyo Night), Kate (Tokyo Night), KDE Breeze Dark + Papirus-Dark icons + Bibata-Modern-Ice cursor, JetBrains Mono Nerd Font, Krohnkite (tiling), Zen Browser, Vesktop, OnlyOffice, Spotify, Haruna, KeePassXC, Solaar, OBS Studio, Timeshift, OneDrive
 
-**Workstation**: NVIDIA driver 590-open, CUDA 13.1, OpenLinkHub (Corsair cooling), Keymapp (ZSA Voyager), Elgato Wave 3 WirePlumber fix, OBSBOT Tiny 2 (`t4l` CLI + obsbot-camera-control GUI in `/opt`, needs `QT_MEDIA_BACKEND=ffmpeg`), Steam, MangoHud (auto-enabled via `MANGOHUD=1`), Gamemode, ProtonUp-Qt
+**Workstation**: NVIDIA driver 590-open, CUDA 13.1, OpenLinkHub (Corsair cooling), Keymapp (ZSA Voyager), Elgato Wave 3 WirePlumber fix, Logitech UVC webcam (`cameractrls` GUI in `~/.local/bin`), Steam, MangoHud (auto-enabled via `MANGOHUD=1`), Gamemode, ProtonUp-Qt
 
 ## Neovim
 
@@ -94,7 +94,7 @@ Global hooks live in `git-hooks/` and are symlinked to `~/.git-hooks/` (referenc
 ## ZSH Config
 
 Modular files sourced from `~/.zshrc`:
-- `zsh/aliases.zsh` — modern CLI aliases (cat->bat, ls->eza, trackon/trackoff for OBSBOT, etc.)
+- `zsh/aliases.zsh` — modern CLI aliases (cat->bat, ls->eza, etc.)
 - `zsh/key-bindings.zsh` — navigation + Italian keyboard tilde
 - `zsh/integrations.zsh` — fnm, fzf, direnv, micromamba, Starship, MangoHud env, fastfetch on start
 
