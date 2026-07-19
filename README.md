@@ -47,14 +47,41 @@ Voice services (ASR/TTS) are managed separately — see `~/forge/voice/README.md
 # GitHub CLI
 gh auth login
 
-# OneDrive
-onedrive
-nano ~/.config/onedrive/sync_list    # add folders to sync
+# OneDrive — interactive login (browser), then configure + first sync (see notes below)
+onedrive                             # authorise in browser, paste redirect URI back
 onedrive --sync --resync
 
 # Timeshift — first snapshot
 sudo timeshift-gtk
 ```
+
+#### OneDrive on a large account
+
+The `abraunegg` client crawls the **entire** remote tree before downloading, so a
+huge folder you *don't* want (e.g. a multi-hundred-GB photo archive) makes the
+first sync appear to hang. Two lessons:
+
+- **`skip_dir` beats `sync_list` for excluding big folders.** `sync_list` still
+  crawls everything and filters; `skip_dir` never even looks inside. In
+  `~/.config/onedrive/config` (config is per-machine, never committed — it holds
+  personal paths, and `refresh_token` next to it is a secret):
+
+  ```
+  sync_dir = "~/OneDrive"
+  skip_dir = "BigArchive|SomeFolder/BigSubdir"   # example names
+  ```
+  Changing `skip_dir`/`sync_list` requires `onedrive --sync --resync`.
+
+- **Grab one folder fast** without crawling siblings:
+  `onedrive --single-directory 'Folder/Subfolder' --sync`
+
+- **Automatic background sync** — enable the bundled user service (and linger so
+  it runs while logged out):
+
+  ```bash
+  systemctl --user enable --now onedrive
+  sudo loginctl enable-linger "$USER"
+  ```
 
 ### 5. UI tweaks (can't be scripted)
 

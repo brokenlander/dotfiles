@@ -232,10 +232,15 @@ else
 fi
 
 echo "Installing LSP servers..."
-if nvim --headless "+MasonInstall basedpyright lua_ls" +qa 2>/dev/null; then
+# `:MasonInstall` is async (quits before finishing with +qa) and uses Mason
+# registry names (lua-language-server), not lspconfig names (lua_ls). Block
+# until each package's install:success/failed fires.
+MASON_INSTALL_LUA="local r=require('mason-registry'); r.refresh(); local names={'basedpyright','lua-language-server'}; local p=#names; for _,n in ipairs(names) do local ok,pk=pcall(r.get_package,n); if ok and not pk:is_installed() then pk:once('install:success',function() p=p-1 end); pk:once('install:failed',function() p=p-1 end); pk:install() else p=p-1 end end; vim.wait(300000,function() return p==0 end,200)"
+if nvim --headless -c "lua $MASON_INSTALL_LUA" -c "qa" 2>/dev/null && \
+   [ -x "$HOME/.local/share/nvim/mason/bin/basedpyright" ]; then
     echo -e "${GREEN}LSP servers installed${NC}"
 else
-    echo -e "${RED}WARNING: LSP install failed. Open Neovim and run :MasonInstall manually.${NC}"
+    echo -e "${RED}WARNING: LSP install failed. Open Neovim and run :MasonInstall basedpyright lua-language-server manually.${NC}"
 fi
 
 echo "Installing Treesitter parsers..."
