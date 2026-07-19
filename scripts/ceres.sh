@@ -49,6 +49,33 @@ if [ -f "$DOTFILES/mangohud/MangoHud.conf" ]; then
     echo -e "${GREEN}MangoHud config linked.${NC}"
 fi
 
+# Steam web-helper GPU fix (Navi 10 / RX 5700 XT)
+# steamwebhelper's GPU-accelerated CEF UI hangs the amdgpu gfx ring
+# ("ring gfx_0.0.0 timeout" -> "device wedged"), which looks like the screen
+# briefly sleeping. Launch Steam with -cef-disable-gpu. Games are unaffected.
+echo "=== Steam CEF GPU fix ==="
+mkdir -p "$HOME/.local/bin" "$HOME/.local/share/applications"
+cat > "$HOME/.local/bin/steam" << 'EOF'
+#!/bin/bash
+# Navi 10 fix: disable GPU in Steam's CEF web helper to stop gfx-ring hangs.
+exec /usr/games/steam -cef-disable-gpu "$@"
+EOF
+chmod +x "$HOME/.local/bin/steam"
+cat > "$HOME/.local/share/applications/steam.desktop" << EOF
+[Desktop Entry]
+Version=1.0
+Categories=Game;Network;
+Exec=$HOME/.local/bin/steam %U
+Icon=steam
+MimeType=x-scheme-handler/steam;x-scheme-handler/steamlink;
+Name=Steam
+Terminal=false
+Type=Application
+Keywords=games;valve;
+EOF
+update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null
+echo -e "${GREEN}Steam set to launch with -cef-disable-gpu.${NC}"
+
 # ========== AMD GPU control (CoreCtrl) ==========
 # CoreCtrl = fan curves, power limits, clocks — the AMD answer to OpenLinkHub/iCUE.
 echo "=== CoreCtrl ==="
@@ -75,25 +102,27 @@ RULE
     echo -e "${GREEN}CoreCtrl polkit rule installed.${NC}"
 fi
 
-# Full fan/clock/power control on amdgpu needs the ppfeaturemask kernel param.
-# Idempotent: only appended once. Requires a reboot to take effect.
-if ! grep -q 'amdgpu.ppfeaturemask' /etc/default/grub; then
-    echo "=== Enabling amdgpu.ppfeaturemask (GRUB) ==="
-    sudo cp /etc/default/grub /etc/default/grub.bak.ceres
-    # 26.04 defaults to single quotes on this line; older releases use double. Handle both.
-    if grep -q 'GRUB_CMDLINE_LINUX_DEFAULT="' /etc/default/grub; then
-        sudo sed -i 's/\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)"/\1 amdgpu.ppfeaturemask=0xffffffff"/' /etc/default/grub
+# Optional: amdgpu.ppfeaturemask unlocks CoreCtrl's MANUAL fan/clock/voltage/power
+# control. OFF by default — on Navi 10 (RX 5700 XT) it can worsen GPU stability, and
+# automatic fan control is fine (CoreCtrl still monitors without it). Enable only if
+# you want custom fan curves:  CERES_ENABLE_PPFEATUREMASK=1 ./scripts/ceres.sh
+if [ "${CERES_ENABLE_PPFEATUREMASK:-0}" = "1" ]; then
+    if ! grep -q 'amdgpu.ppfeaturemask' /etc/default/grub; then
+        echo "=== Enabling amdgpu.ppfeaturemask (GRUB) ==="
+        sudo cp /etc/default/grub /etc/default/grub.bak.ceres
+        # 26.04 defaults to single quotes on this line; older releases use double. Handle both.
+        if grep -q 'GRUB_CMDLINE_LINUX_DEFAULT="' /etc/default/grub; then
+            sudo sed -i 's/\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)"/\1 amdgpu.ppfeaturemask=0xffffffff"/' /etc/default/grub
+        else
+            sudo sed -i "s/\(GRUB_CMDLINE_LINUX_DEFAULT='[^']*\)'/\1 amdgpu.ppfeaturemask=0xffffffff'/" /etc/default/grub
+        fi
+        grep -q 'amdgpu.ppfeaturemask' /etc/default/grub && sudo update-grub
+        echo -e "${YELLOW}amdgpu.ppfeaturemask enabled — reboot required.${NC}"
     else
-        sudo sed -i "s/\(GRUB_CMDLINE_LINUX_DEFAULT='[^']*\)'/\1 amdgpu.ppfeaturemask=0xffffffff'/" /etc/default/grub
+        echo "amdgpu.ppfeaturemask already set, skipping."
     fi
-    if grep -q 'amdgpu.ppfeaturemask' /etc/default/grub; then
-        sudo update-grub
-    else
-        echo -e "${RED}Failed to edit GRUB_CMDLINE_LINUX_DEFAULT — add amdgpu.ppfeaturemask=0xffffffff manually.${NC}"
-    fi
-    echo -e "${YELLOW}amdgpu.ppfeaturemask enabled — reboot required for CoreCtrl overclock/fan control.${NC}"
 else
-    echo "amdgpu.ppfeaturemask already set, skipping."
+    echo "Skipping amdgpu.ppfeaturemask (default; safer on Navi 10). Set CERES_ENABLE_PPFEATUREMASK=1 to unlock CoreCtrl manual fan/clock control."
 fi
 
 # Autostart CoreCtrl minimized to tray so fan/power profiles apply on login.
