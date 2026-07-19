@@ -1,6 +1,10 @@
 #!/bin/bash
 # No set -e — too many tools have non-zero exits that aren't real errors
 
+# Run apt fully non-interactively (avoids debconf/needrestart prompts hanging the script)
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1
+
 # Detect desktop environment
 HAS_DISPLAY=false
 if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ] || [ -n "$XDG_CURRENT_DESKTOP" ]; then
@@ -42,6 +46,9 @@ sudo apt-get install -y curl fzf python3 pipx xclip xsel wl-clipboard unzip rclo
 # Desktop-only packages
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing desktop packages ==="
+    # ubuntu-restricted-extras pulls ttf-mscorefonts-installer, which otherwise
+    # hangs forever on an interactive EULA dialog. Pre-accept it.
+    echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections
     sudo apt-get install -y kitty keepassxc haruna ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio xdotool librsvg2-bin
 
     # Zen Browser
@@ -63,8 +70,26 @@ sudo usermod -s $(which zsh) "$USER"
 touch "$HOME/.zshrc"
 
 # Modern CLI replacements
+# NOTE: difftastic is intentionally NOT here — it is not in the Ubuntu repos, and
+# apt aborts the ENTIRE install line on one unknown package. Installed from GitHub below.
 echo "=== Installing modern CLI tools ==="
-sudo apt install -y bat eza fd-find ripgrep zoxide git-delta tealdeer duf btop difftastic
+sudo apt install -y bat eza fd-find ripgrep zoxide git-delta tealdeer duf btop
+
+# Difftastic (structural diff) — not packaged for Ubuntu, install the release binary
+echo "=== Installing difftastic ==="
+if command -v difft &> /dev/null; then
+    echo "Difftastic already installed, skipping..."
+else
+    DIFFT_VERSION=$(curl -s "https://api.github.com/repos/Wilfred/difftastic/releases/latest" | grep -Po '"tag_name": *"\K[^"]*')
+    if [ -z "$DIFFT_VERSION" ]; then
+        echo "WARNING: Failed to fetch difftastic version. Skipping."
+    else
+        curl -Lo /tmp/difft.tar.gz "https://github.com/Wilfred/difftastic/releases/download/${DIFFT_VERSION}/difft-x86_64-unknown-linux-gnu.tar.gz"
+        tar xf /tmp/difft.tar.gz -C /tmp difft
+        sudo install /tmp/difft -D -t /usr/local/bin/
+        rm -f /tmp/difft.tar.gz /tmp/difft
+    fi
+fi
 
 # Dust
 echo "=== Installing dust ==="
@@ -89,13 +114,28 @@ echo "=== Installing Starship ==="
 if command -v starship &> /dev/null; then
     echo "Starship already installed, skipping..."
 else
-    curl -sS https://starship.rs/install.sh | sh -s -- -y
+    # Install to ~/.local/bin — the installer's internal `sudo` for /usr/local/bin
+    # fails non-interactively (needs a tty) even with passwordless sudo.
+    mkdir -p "$HOME/.local/bin"
+    curl -sS https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin"
 fi
 
 # PPAs for latest versions (gracefully skip if not available for this release)
+# A PPA that has no build for a brand-new Ubuntu release still gets added as a
+# source, then breaks EVERY subsequent `apt update`. Add, then drop the source
+# if the PPA has no Release file for this codename.
 echo "=== Adding PPAs ==="
-timeout 30 sudo add-apt-repository -y ppa:neovim-ppa/stable 2>/dev/null || echo "WARNING: Neovim PPA not available, will use Ubuntu repo version."
-timeout 30 sudo add-apt-repository -y ppa:git-core/ppa 2>/dev/null || echo "WARNING: Git PPA not available, will use Ubuntu repo version."
+CODENAME="$(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")"
+add_ppa_safe() {
+    local ppa="$1" srcbase="$2"
+    timeout 30 sudo add-apt-repository -y "ppa:$ppa" 2>/dev/null || { echo "WARNING: could not add ppa:$ppa"; return; }
+    if ! curl -fsI "https://ppa.launchpadcontent.net/${ppa}/ubuntu/dists/${CODENAME}/Release" >/dev/null 2>&1; then
+        echo "WARNING: ppa:$ppa has no '${CODENAME}' release — removing its source, using Ubuntu repo version."
+        sudo rm -f "/etc/apt/sources.list.d/${srcbase}-${CODENAME}.sources" "/etc/apt/sources.list.d/${srcbase}-${CODENAME}.list"
+    fi
+}
+add_ppa_safe neovim-ppa/stable neovim-ppa-ubuntu-stable
+add_ppa_safe git-core/ppa git-core-ubuntu-ppa
 sudo apt update
 sudo apt install -y neovim git
 
@@ -187,7 +227,9 @@ eval "$(fnm env)"
 # Node.js
 echo "=== Installing Node.js ==="
 fnm install --lts
-fnm use --lts
+# `fnm use --lts` is not valid (no such flag); install --lts aliases it to lts-latest
+fnm use lts-latest
+fnm default lts-latest
 npm install --global yarn
 npm install --global tree-sitter-cli
 npm install --global neovim
@@ -314,6 +356,16 @@ if [ "$HAS_DISPLAY" = true ]; then
         kwriteconfig6 --file kdeglobals --group Icons --key Theme Papirus-Dark 2>/dev/null || true
         kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorTheme Bibata-Modern-Ice 2>/dev/null || true
         kwriteconfig6 --file ~/.config/kcminputrc --group Mouse --key cursorSize 24 2>/dev/null || true
+
+        # Virtual desktops (3, single row) — needs unique Ids per desktop
+        kwriteconfig6 --file kwinrc --group Desktops --key Number 3 2>/dev/null || true
+        kwriteconfig6 --file kwinrc --group Desktops --key Rows 1 2>/dev/null || true
+        for i in 1 2 3; do
+            if [ -z "$(kreadconfig6 --file kwinrc --group Desktops --key "Id_$i" 2>/dev/null)" ]; then
+                kwriteconfig6 --file kwinrc --group Desktops --key "Id_$i" "$(uuidgen)" 2>/dev/null || true
+            fi
+        done
+        qdbus6 org.kde.KWin /KWin reconfigure 2>/dev/null || true
     fi
 fi
 
