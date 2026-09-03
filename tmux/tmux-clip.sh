@@ -8,12 +8,30 @@
 # The pane id comes from the binding (#{pane_id}); TMUX_PANE in a job is the
 # server's first pane, not the job's. Without it, fall back to the job's session.
 
+T=${2:-}
+if [ -z "$T" ]; then
+    case "$TMUX" in *,*,*) T="\$${TMUX##*,}" ;; esac
+fi
+
 showenv_value() {
     # only a real DISPLAY=... line; "-DISPLAY" unset markers are ignored
     tmux showenv "$@" DISPLAY 2>/dev/null | sed -n 's/^DISPLAY=//p'
 }
 
+# DISPLAY of each client attached to the pane's session, most recent activity
+# first: two terminals with X forwarding each answer, only the one you are
+# looking at is right.
+client_displays() {
+    sid=$(tmux display -p -t "$T" '#{session_id}' 2>/dev/null) || return 0
+    [ -n "$sid" ] || return 0
+    tmux list-clients -t "$sid" -F '#{client_activity} #{client_pid}' 2>/dev/null | sort -rn |
+    while read -r _ pid; do
+        tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^DISPLAY=//p'
+    done
+}
+
 candidates() {
+    [ -n "$T" ] && client_displays
     [ -n "$DISPLAY" ] && printf '%s\n' "$DISPLAY"
     showenv_value -g
     [ -n "$T" ] && showenv_value -t "$T"
@@ -41,11 +59,6 @@ use_display() {
         tmux setenv -t "$T" -u DISPLAY 2>/dev/null
     fi
 }
-
-T=${2:-}
-if [ -z "$T" ]; then
-    case "$TMUX" in *,*,*) T="\$${TMUX##*,}" ;; esac
-fi
 
 case "$1" in
 copy)
