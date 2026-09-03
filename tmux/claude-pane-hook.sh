@@ -14,17 +14,8 @@ while [ "$p" -gt 1 ] 2>/dev/null; do
     p=$(sed 's/.*) //' "/proc/$p/stat" 2>/dev/null | cut -d' ' -f2)
 done
 
-# its argv without the binary, an interpreter script, or resume/continue flags
 args=
-if [ "$p" -gt 1 ] 2>/dev/null; then
-    args=$(tr '\0' '\n' < "/proc/$p/cmdline" | tail -n +2 | awk '
-        NR==1 && system("[ -f \"" $0 "\" ]")==0 { next }
-        skip && !/^-/ { skip=0; next } { skip=0 }
-        $0=="-c" || $0=="--continue" { next }
-        $0=="-r" || $0=="--resume" { skip=1; next }
-        /^--resume=/ { next }
-        { printf "%s%s", (n++ ? " " : ""), $0 }')
-fi
+[ "$p" -gt 1 ] 2>/dev/null && args=$("$(dirname "$0")/claude-panes.sh" args "$p")
 
 tmux set -p -t "$TMUX_PANE" @claude_session "$id" 2>/dev/null
 tmux set -p -t "$TMUX_PANE" @claude_args "$args" 2>/dev/null
