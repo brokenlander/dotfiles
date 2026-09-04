@@ -173,6 +173,16 @@ if [ -f "$DOTFILES/tmux/.tmux.conf" ]; then
     else
         echo -e "${YELLOW}Warning:${NC} TPM not found. Run install-dependencies.sh first."
     fi
+
+    # tmux-resurrect periodic save, via a systemd user timer rather than a
+    # status-line hook that forks on every render
+    if [ -d "$DOTFILES/systemd/user" ]; then
+        create_symlink "$DOTFILES/systemd/user/tmux-resurrect-save.service" "$HOME/.config/systemd/user/tmux-resurrect-save.service"
+        create_symlink "$DOTFILES/systemd/user/tmux-resurrect-save.timer" "$HOME/.config/systemd/user/tmux-resurrect-save.timer"
+        systemctl --user daemon-reload 2>/dev/null || true
+        systemctl --user enable --now tmux-resurrect-save.timer 2>/dev/null || true
+        echo -e "${GREEN}tmux-resurrect save timer enabled${NC}"
+    fi
 else
     echo -e "${RED}Error:${NC} $DOTFILES/tmux/.tmux.conf not found!"
 fi

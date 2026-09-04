@@ -1,3 +1,7 @@
 # Claude Code files
 .claude/
 node_modules/
+
+# Editing backups (manual or scripted .bak-<timestamp> copies)
+*.bak
+*.bak-*

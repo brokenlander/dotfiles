@@ -1,0 +1,8 @@
+[Unit]
+Description=Save tmux session layout (tmux-resurrect)
+
+[Service]
+Type=oneshot
+# Driven by a timer rather than continuum's status-right hook: that hook forks
+# on every status render, which on a busy server is the cost we removed.
+ExecStart=%h/.tmux/plugins/tmux-resurrect/scripts/save.sh
