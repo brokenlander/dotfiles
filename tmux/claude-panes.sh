@@ -35,28 +35,36 @@ tag) tag_panes ;;
 save)
     mkdir -p "$dir"
     tag_panes
+    # one list per resurrect save, named like it, so a restore reads the one
+    # that matches the layout it brings back
+    ts=$(readlink "$dir/last" 2>/dev/null | sed -n 's/^tmux_resurrect_\(.*\)\.txt$/\1/p')
+    out=$f; [ -n "$ts" ] && out="$dir/claude-panes_$ts.tsv"
     tmux list-panes -a -F "#{session_name}${tab}#{window_index}${tab}#{pane_index}${tab}#{pane_current_path}${tab}#{pane_current_command}${tab}#{@claude_session}${tab}#{@claude_args}" |
-        awk -F'\t' -v OFS='\t' '$5=="claude" && $6!="" {print $1,$2,$3,$4,$6,$7}' > "$f.tmp" &&
-        mv "$f.tmp" "$f"
+        awk -F'\t' -v OFS='\t' '$5=="claude" && $6!="" {print $1,$2,$3,$4,$6,$7}' > "$out.tmp" &&
+        mv "$out.tmp" "$out" && { [ "$out" = "$f" ] || ln -sfn "$(basename "$out")" "$f"; }
     ;;
 restore)
-    # resurrect brings the sidebar panes back as bare shells next to the ones
-    # the sidebar plugin reopens; drop them
-    tab2="$tab"
-    [ -r "$dir/last" ] && awk -F'\t' '$1=="pane" && $10=="agent-sidebar" {print $2 "\t" $3 "\t" $6}' "$dir/last" |
-    while IFS="$tab2" read -r s w p; do
-        t="=$s:$w.$p"
-        c=$(tmux display -p -t "$t" '#{pane_current_command}' 2>/dev/null) || continue
-        case "$c" in *sh) tmux kill-pane -t "$t" ;; esac
-    done
     [ -s "$f" ] || exit 0
     sleep 2
-    while IFS="$tab" read -r s w p path id args; do
-        t="=$s:$w.$p"
-        tmux display -p -t "$t" '' >/dev/null 2>&1 || continue
-        [ "$(tmux display -p -t "$t" '#{pane_current_command}')" = claude ] && continue
-        tmux send-keys -t "$t" "cd '$path' && claude $args --resume $id" Enter
-    done < "$f"
+    # resolve every target to a pane id first: killing a pane renumbers the rest
+    launch=$(while IFS="$tab" read -r s w p path id args; do
+        pid=$(tmux display -p -t "=$s:$w.$p" '#{pane_id}' 2>/dev/null) || continue
+        printf '%s\t%s\t%s\t%s\n' "$pid" "$path" "$id" "$args"
+    done < "$f")
+    # resurrect brings the sidebar panes back as bare shells next to the ones
+    # the sidebar plugin reopens; drop them
+    [ -r "$dir/last" ] && awk -F'\t' '$1=="pane" && $10=="agent-sidebar" {print $2 "\t" $3 "\t" $6}' "$dir/last" |
+    while IFS="$tab" read -r s w p; do
+        pid=$(tmux display -p -t "=$s:$w.$p" '#{pane_id}' 2>/dev/null) || continue
+        case "$(tmux display -p -t "$pid" '#{pane_current_command}')" in *sh) tmux kill-pane -t "$pid" ;; esac
+    done
+    printf '%s\n' "$launch" | while IFS="$tab" read -r pid path id args; do
+        [ -n "$pid" ] || continue
+        tmux display -p -t "$pid" '' >/dev/null 2>&1 || continue
+        [ "$(tmux display -p -t "$pid" '#{pane_current_command}')" = claude ] && continue
+        tmux send-keys -t "$pid" "cd '$path' && claude $args --resume $id" Enter
+        sleep 1
+    done
     ;;
 *)
     echo "usage: $0 save|restore|tag|args PID" >&2; exit 2 ;;
