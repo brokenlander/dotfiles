@@ -267,6 +267,16 @@ else
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 fi
 
+# sesh — smart tmux session manager (needs Go)
+echo "=== Installing sesh ==="
+if command -v sesh >/dev/null 2>&1 || [ -x "$HOME/go/bin/sesh" ]; then
+    echo "sesh already installed, skipping..."
+elif command -v go >/dev/null 2>&1; then
+    go install github.com/joshmedeski/sesh/v2@latest
+else
+    echo "Go not found; skipping sesh (later: go install github.com/joshmedeski/sesh/v2@latest)"
+fi
+
 # FZF Shell Integration
 echo "=== Configuring FZF Shell Integration ==="
 if [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]; then

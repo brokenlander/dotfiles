@@ -13,6 +13,9 @@ setopt HIST_IGNORE_SPACE
 # Ensure ~/.local/bin is on PATH (pipx, claude, uv, etc.)
 export PATH="$HOME/.local/bin:$PATH"
 
+# Go-installed tools (sesh, etc.)
+export PATH="$HOME/go/bin:$PATH"
+
 # MangoHud — auto-enable for all Vulkan/OpenGL games (desktop only)
 if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
     export MANGOHUD=1
