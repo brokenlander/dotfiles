@@ -16,6 +16,9 @@ export PATH="$HOME/.local/bin:$PATH"
 # Go-installed tools (sesh, etc.)
 export PATH="$HOME/go/bin:$PATH"
 
+# Personal scripts
+export PATH="$HOME/dotfiles/bin:$PATH"
+
 # MangoHud — auto-enable for all Vulkan/OpenGL games (desktop only)
 if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
     export MANGOHUD=1
