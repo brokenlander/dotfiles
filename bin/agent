@@ -21,5 +21,9 @@ done
 tmux new-session -d -s "$name" -c "$repo" \
 	'claude --dangerously-skip-permissions --worktree'
 
+# a live diff of this agent's own worktree, in a second window
+tmux new-window -d -t "=$name" -n diff -c "$repo" \
+	"$HOME/dotfiles/tmux/agent-diff.sh '$name'"
+
 if [ -n "${TMUX:-}" ]; then tmux switch-client -t "$name"
 else tmux attach -t "$name"; fi
