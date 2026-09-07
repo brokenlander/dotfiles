@@ -15,15 +15,20 @@ args_of() {
         $0=="-c" || $0=="--continue" { next }
         $0=="-r" || $0=="--resume" { skip=1; next }
         /^--resume=/ { next }
-        { printf "%s%s", (n++ ? " " : ""), $0 }'
+        # keep only flags; drop positional args (e.g. a slot bootstrap prompt),
+        # which must NOT be replayed ahead of --resume on restore
+        /^-/ { printf "%s%s", (n++ ? " " : ""), $0 }'
 }
 
 tag_panes() {
-    tmux list-panes -a -F "#{pane_id}${tab}#{pane_pid}${tab}#{pane_current_command}${tab}#{@claude_session}" |
-    awk -F'\t' '$3=="claude" && $4=="" {print $1, $2}' |
+    # EVERY claude pane, not just untagged ones: the @claude_session tag goes
+    # stale (or crossed) on resume/compact, but the live process's session file
+    # — keyed by pid — is ground truth. Always refresh from it.
+    tmux list-panes -a -F "#{pane_id}${tab}#{pane_pid}${tab}#{pane_current_command}" |
+    awk -F'\t' '$3=="claude" {print $1, $2}' |
     while read -r pane ppid; do
         c=$(pgrep -x claude -P "$ppid" | head -n 1); [ -n "$c" ] || continue
-        id=$(jq -r '.sessionId // empty' "$HOME/.claude/sessions/$c.json" 2>/dev/null); [ -n "$id" ] || continue
+        id=$(jq -r '.sessionId // .session_id // empty' "$HOME/.claude/sessions/$c.json" 2>/dev/null); [ -n "$id" ] || continue
         tmux set -p -t "$pane" @claude_session "$id"
         tmux set -p -t "$pane" @claude_args "$(args_of "$c")"
     done
