@@ -1,0 +1,58 @@
+#!/bin/bash
+# Last line of defence before anything leaves this machine.
+#
+# The commit-side hooks can be defeated: `--no-verify`, a repo-local
+# core.hooksPath that shadows the global set, or a commit authored elsewhere
+# and merged down (a GitHub squash-merge re-adds trailers server-side).
+# This scans every commit actually being pushed.
+. "$(dirname "$(readlink -f "$0")")/_guard-common.sh"
+
+KIND=$(guard_remote_kind "$(git rev-parse --show-toplevel)")
+ZERO=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+FAIL=0
+report() { echo "  $1"; FAIL=1; }
+
+# Buffer stdin: git-lfs needs the very same ref lines we are about to consume.
+REFS=$(cat)
+
+while read -r lref lsha rref rsha; do
+  [ "$lsha" = "$ZERO" ] && continue            # branch deletion
+  if [ "$rsha" = "$ZERO" ]; then
+    range="$lsha --not --remotes"              # new branch
+  else
+    range="$rsha..$lsha"
+  fi
+  for c in $(git rev-list $range 2>/dev/null); do
+    subj=$(git log -1 --format=%s "$c")
+    if git log -1 --format='%B' "$c" | grep -iqE "$VENDOR_PATTERNS"; then
+      report "${c:0:9} message names an AI vendor  — $subj"
+    fi
+    if git log -1 --format='%B' "$c" | grep -iqE "$IDENTITY_PATTERNS"; then
+      report "${c:0:9} message carries a banned identity — $subj"
+    fi
+    for e in $(git log -1 --format='%ae%n%ce' "$c"); do
+      why=$(guard_bad_identity "$e" "$KIND")
+      [ -n "$why" ] && report "${c:0:9} $why — $subj"
+    done
+  done
+done <<< "$REFS"
+
+if [ "$FAIL" = 1 ]; then
+  echo ""
+  echo "  ✖ PUSH BLOCKED — these commits must be rewritten first:"
+  echo "  ────────────────────────────────────────────────────────"
+  echo ""
+  echo "  Rewrite with:  git rebase -i <base>   (reword the offenders)"
+  echo "  or amend the tip:  git commit --amend"
+  echo ""
+  echo "  This fires even when the commit hooks were skipped, which is"
+  echo "  the point. Do not reach for --no-verify."
+  echo ""
+  exit 1
+fi
+
+# Preserve Git LFS, which owns pre-push on this box.
+if command -v git-lfs >/dev/null 2>&1; then
+  printf '%s\n' "$REFS" | git lfs pre-push "$@"
+fi
+exit 0

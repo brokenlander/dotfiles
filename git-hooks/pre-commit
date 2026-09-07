@@ -1,23 +1,27 @@
 #!/bin/bash
-# Global pre-commit hook: block Claude/AI references from being committed
+# Block AI references in staged content, CLAUDE.md, and banned commit identities.
+. "$(dirname "$(readlink -f "$0")")/_guard-common.sh"
 
-# Patterns to reject in staged file contents
-PATTERNS="claude|anthropic"
-
-# Check if CLAUDE.md is staged
 if git diff --cached --name-only | grep -qi "^claude\.md$"; then
-    echo "BLOCKED: CLAUDE.md is staged for commit. Remove it with: git reset HEAD CLAUDE.md"
-    exit 1
+  guard_die "CLAUDE.md is staged." "Unstage it: git reset HEAD CLAUDE.md"
 fi
 
-# Check staged file contents for forbidden patterns
-MATCHES=$(git diff --cached --diff-filter=ACM -U0 | grep -iE "^\+" | grep -v "^+++" | grep -iE "$PATTERNS" || true)
+# The identity this commit would actually carry, judged against the remote.
+KIND=$(guard_remote_kind "$(git rev-parse --show-toplevel)")
+AE=$(git var GIT_AUTHOR_IDENT    | sed -n 's/.*<\(.*\)>.*/\1/p')
+CE=$(git var GIT_COMMITTER_IDENT | sed -n 's/.*<\(.*\)>.*/\1/p')
+for e in "$AE" "$CE"; do
+  why=$(guard_bad_identity "$e" "$KIND")
+  if [ -n "$why" ]; then
+    guard_die "Wrong commit identity for this remote ($KIND):" "$why" \
+      "Configured: $(git config --local --get user.email || git config --global --get user.email)" \
+      "Fix with: git config user.email <the right address>   (drop any -c override)"
+  fi
+done
+
+MATCHES=$(git diff --cached --diff-filter=ACM -U0 | grep -iE "^\+" | grep -v "^+++" | grep -iE "$ALL_PATTERNS" || true)
 if [ -n "$MATCHES" ]; then
-    echo "BLOCKED: Staged changes contain forbidden patterns:"
-    echo "$MATCHES"
-    echo ""
-    echo "Remove these references before committing."
-    exit 1
+  guard_die "Staged changes contain forbidden patterns:" "$MATCHES" \
+    "If the vendor name is legitimate data, phrase it neutrally."
 fi
-
 exit 0

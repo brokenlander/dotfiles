@@ -6,7 +6,7 @@
 # Replace with your actual personal details
 [user]
     name = Andrea Moccia
-    email = brokenlander@users.noreply.github.com
+	email = Andrea.Moccia@options-it.com
 
 # ========== CREDENTIAL HELPERS ==========
 # This section configures how Git authenticates with remote repositories
@@ -14,7 +14,9 @@
     # Uses the GitHub CLI for authentication - very convenient!
     # This allows you to use 'gh auth login' to authenticate once
     # and have Git operations work seamlessly thereafter.
-    helper = !gh auth git-credential
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+	username = andrea-moccia_options
     
     # Alternative credential helper (commented out)
     # Uncomment to store credentials persistently (less secure but convenient)
@@ -164,3 +166,6 @@
     
     # List open issues
     issues = "!gh issue list"
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential

@@ -1,0 +1,15 @@
+#!/bin/bash
+# Strip injected AI attribution BEFORE the message is ever validated.
+# A harness or wrapper that appends Co-Authored-By / session trailers gets its
+# lines removed silently; commit-msg then blocks anything that survives.
+. "$(dirname "$(readlink -f "$0")")/_guard-common.sh"
+[ -f "$1" ] || exit 0
+tmp=$(mktemp)
+grep -viE "^[[:space:]]*(co-authored-by|signed-off-by):.*($ALL_PATTERNS)" "$1" \
+  | grep -viE "^[[:space:]]*(claude-session|assistant-session|generated-with):" \
+  | grep -viE '^[[:space:]]*🤖?[[:space:]]*generated with .*(claude|anthropic)' \
+  | grep -viE '^[[:space:]]*https://claude\.ai/' > "$tmp"
+# collapse a trailing run of blank lines left behind
+awk 'BEGIN{n=0} {if($0==""){n++} else {while(n>0){print "";n--}; print}}' "$tmp" > "$1"
+rm -f "$tmp"
+exit 0
