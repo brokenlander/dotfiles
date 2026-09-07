@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+# pm-agent-pick — fuzzy-pick where to open an agent, then hand off to pm-agent.
+# Runs in a tmux popup. PrivateMind is pinned first (→ AgentN slot); any other
+# directory → a plain agent in that repo. ctrl-f finds any dir under $HOME.
+set -u
+. "$HOME/dotfiles/tmux/fzf-theme.sh"
+PM="$HOME/forge/privatemind"
+AGENT="$HOME/dotfiles/bin/pm-agent"
+FD="$(command -v fdfind 2>/dev/null || command -v fd 2>/dev/null || echo find)"
+
+list() {
+	printf '%s\n' "$PM"
+	command -v zoxide >/dev/null 2>&1 && zoxide query -l 2>/dev/null
+}
+
+sel="$(list | awk 'NF && !seen[$0]++' | sed "s|^$HOME/|~/|" | fzf \
+	--border-label ' 󰚩  new agent ' \
+	--prompt '  where › ' \
+	--header 'privatemind → its own AgentN slot   ·   any repo → an agent there   ·   ^f find' \
+	--preview 'p=$(echo {} | sed "s|^~/|'"$HOME"'/|"); git -C "$p" -c color.ui=always status -sb 2>/dev/null || ls -la "$p" 2>/dev/null | head -40' \
+	--preview-window 'right,56%,border-rounded' \
+	--bind "ctrl-f:change-prompt(  find › )+reload($FD -H -t d -d 4 . $HOME 2>/dev/null | sed 's|^$HOME/|~/|')")"
+[ -n "$sel" ] || exit 0
+exec "$AGENT" "$(printf '%s' "$sel" | sed "s|^~/|$HOME/|")"

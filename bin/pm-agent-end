@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+# pm-agent-end [session] — end an agent: kill its tmux session and, if it holds a
+# PrivateMind AgentN slot, reset that slot's sub-repos to origin/main (clean,
+# reusable). No prompt. Committed branches survive (reset only detaches, the ref
+# stays); uncommitted/untracked work in the slot is discarded. A generic agent
+# (no slot) is just ended — its repo is never touched.
+set -u
+WS="$HOME/forge/privatemind"; REPOS="app gateway app-db gateway-db helm"
+
+sess="${1:-}"
+[ -n "$sess" ] || sess="$(tmux display-message -p '#{session_name}' 2>/dev/null)"
+[ -n "$sess" ] || exit 0
+
+slot="$(tmux show-options -t "$sess" -v -q @pm_slot 2>/dev/null)"
+tmux kill-session -t "$sess" 2>/dev/null   # end the session first — feels instant
+
+# Then clean its slot (if any) back to origin/main.
+[ -n "$slot" ] && [ -d "$WS/Agent$slot" ] || exit 0
+dir="$WS/Agent$slot"
+for r in $REPOS; do
+	wt="$dir/$r"; [ -d "$wt" ] || continue
+	git -C "$wt" checkout -q --detach 2>/dev/null   # freeze the branch ref
+	git -C "$wt" reset -q --hard origin/main 2>/dev/null
+	git -C "$wt" clean -qfd 2>/dev/null
+done
+rm -f "$dir/.agent-brief"

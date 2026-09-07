@@ -1,0 +1,56 @@
+#!/usr/bin/env sh
+# wdiff [--watch] [dir]
+#   Pick a changed file anywhere under dir (a workspace, or one AgentN slot) and
+#   read its line-level diff. fzf list (with +/- per file) + a live delta preview;
+#   Enter opens the full side-by-side/git-style diff, q returns to the list,
+#   ctrl-r refreshes, esc quits. --watch keeps the pane alive: it waits for the
+#   first change, shows the picker, and re-opens it on exit — for the agent's
+#   diff window. Without --watch (e.g. the prefix+g popup) it just says so and
+#   exits when nothing has changed. The lazygit-free drill-in. See wstat.
+set -u
+WSTAT="$HOME/dotfiles/bin/wstat"
+TAB="$(printf '\t')"
+GRN='\033[38;2;158;206;106m'; RED='\033[38;2;247;118;142m'; RST='\033[0m'
+
+# Hidden helper: emit fzf rows as
+#   "<display><TAB>repo<TAB>base<TAB>status<TAB>plus<TAB>minus<TAB>path"
+# display is "<status>  +plus -minus  <repo-name>/<path>"; the rest feed preview.
+if [ "${1:-}" = "--gen" ]; then
+	"$WSTAT" --list "${2:-$PWD}" | awk -F"$TAB" -v OFS="$TAB" \
+		-v G="$(printf '%b' "$GRN")" -v R="$(printf '%b' "$RED")" -v Z="$(printf '%b' "$RST")" '{
+			name=$1; sub(/.*\//,"",name)
+			cnt = ($4 ~ /^[0-9]+$/) ? sprintf("%s+%s %s-%s%s ", G,$4, R,$5, Z) : ""
+			printf "%s  %s%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $3, cnt, name, $6, $1, $2, $3, $4, $5, $6
+		}'
+	exit 0
+fi
+
+watch=0; [ "${1:-}" = "--watch" ] && { watch=1; shift; }
+DIR="${1:-$PWD}"
+
+# Diff for the selected row. fzf shell-quotes {2}/{3}/{7}, so spaces are safe.
+d='r={2}; b={3}; p={7}; if [ -n "$b" ]; then git -C "$r" diff "$b" -- "$p"; else git -C "$r" diff -- "$p"; fi'
+
+picker() {
+	"$0" --gen "$DIR" | fzf --ansi --no-sort --delimiter="$TAB" --with-nth=1 \
+		--prompt '  ' --header 'enter: full diff    q: back    ctrl-r: refresh    esc: quit' \
+		--preview "$d | delta --paging=never --width=\$FZF_PREVIEW_COLUMNS" \
+		--preview-window 'right,68%,border-left' \
+		--bind "ctrl-r:reload($0 --gen '$DIR')" \
+		--bind "enter:execute($d | delta --paging=always)" \
+		>/dev/null
+}
+
+if [ "$watch" = 1 ]; then
+	while :; do
+		while [ -z "$("$0" --gen "$DIR")" ]; do
+			printf '\033[H\033[2J  watching %s\n  for changes vs origin/main…\n' "$DIR"
+			sleep 2
+		done
+		picker
+	done
+else
+	[ -n "$("$0" --gen "$DIR")" ] ||
+		{ printf '  nothing changed vs origin/main under %s\n' "$DIR"; sleep 1.4; exit 0; }
+	picker
+fi

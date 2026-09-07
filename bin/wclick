@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+# wclick PANE_ID MOUSE_Y CWD — called by the tmux click binding on a wstat diff
+# pane. Reads the clicked line, and if it's a changed-file row, pops that file's
+# full diff (delta) in a popup. Non-file rows (headers, blanks) do nothing.
+set -u
+pane="${1:-}"; y="${2:-}"; cwd="${3:-$PWD}"
+[ -n "$pane" ] && [ -n "$y" ] || exit 0
+tmux select-pane -t "$pane" 2>/dev/null
+
+cap="$(tmux capture-pane -p -t "$pane" 2>/dev/null)"
+line="$(printf '%s\n' "$cap" | sed -n "$((y + 1))p")"
+
+# A file row is indented and starts with a git status (M/A/D/R/?/etc). Strip the
+# leading status token and the trailing "+N -N" counts to get the path.
+case "$line" in
+	"    "[MADRCU?]*) ;;   # four-space indent + status letter
+	*) exit 0 ;;
+esac
+path="$(printf '%s' "$line" | sed 's/^ *//; s/^[^ ]* *//; s/  *+[0-9-]* -[0-9-]*$//; s/ *$//')"
+[ -n "$path" ] || exit 0
+
+# The repo is the nearest "▍ <repo>" header at or above the clicked line.
+repo="$(printf '%s\n' "$cap" | sed -n "1,$((y + 1))p" |
+	grep '^▍ ' | tail -1 | sed 's/^▍ *//; s/ .*//')"
+[ -n "$repo" ] || exit 0
+rdir="$cwd/$repo"
+git -C "$rdir" rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+
+base="$(git -C "$rdir" merge-base HEAD origin/main 2>/dev/null)"
+[ -n "$base" ] || base="$(git -C "$rdir" rev-parse --verify -q origin/main 2>/dev/null)"
+
+if [ -n "$base" ]; then dcmd="git -C '$rdir' diff $base -- '$path'";
+else dcmd="git -C '$rdir' diff -- '$path'"; fi
+tmux display-popup -E -w 92% -h 92% -T " 󰈢 $repo/$path " \
+	"$dcmd | delta --paging=always"

@@ -1,0 +1,90 @@
+#!/usr/bin/env sh
+# wstat [dir]          — live one-pane dashboard: every git repo under dir and
+#                        its footprint vs where it forked from origin/main
+#                        (committed + staged/unstaged + untracked), +/- per file.
+# wstat --list [dir]    — machine-readable: one changed file per line, as
+#                        "repo<TAB>base<TAB>status<TAB>plus<TAB>minus<TAB>path".
+#   wstat ~/forge/privatemind/Agent3
+set -u
+
+mode=live
+case "${1:-}" in --once) mode=once; shift;; --list) mode=list; shift;; esac
+root="${1:-$PWD}"; root="$(cd "$root" 2>/dev/null && pwd)" || exit 1
+case "$root" in "$HOME"/*) disp="~${root#"$HOME"}";; *) disp="$root";; esac
+TAB="$(printf '\t')"
+
+BLU='\033[38;2;122;162;247m'; DIM='\033[38;2;86;95;137m'; AMB='\033[38;2;224;175;104m'
+GRN='\033[38;2;158;206;106m'; RED='\033[38;2;247;118;142m'; RST='\033[0m'; B='\033[1m'
+
+# Each immediate-subdir git repo, plus root itself.
+repos() {
+	for d in "$root"/*/ "$root"; do
+		d="${d%/}"
+		[ "$(git -C "$d" rev-parse --show-toplevel 2>/dev/null)" = "$d" ] && printf '%s\n' "$d"
+	done
+}
+
+# The commit a repo forked from origin/main — the baseline for "what changed".
+repo_base() {
+	b="$(git -C "$1" merge-base HEAD origin/main 2>/dev/null)"
+	[ -n "$b" ] || b="$(git -C "$1" rev-parse --verify -q origin/main 2>/dev/null)"
+	printf '%s' "$b"
+}
+
+# "status<TAB>plus<TAB>minus<TAB>path" per changed file vs base: numstat (+/-)
+# joined to name-status (A/M/D/R), then untracked files as adds. Non-numeric
+# +/- (binary) come through as "-".
+repo_changes() {
+	d="$1"; base="$(repo_base "$d")"
+	if [ -n "$base" ]; then
+		{
+			git -C "$d" diff --numstat "$base" 2>/dev/null | sed "s/^/N$TAB/"
+			git -C "$d" diff --name-status "$base" 2>/dev/null | sed "s/^/S$TAB/"
+		} | awk -F"$TAB" -v OFS="$TAB" '
+			$1=="N" { a[$4]=$2; r[$4]=$3; next }
+			$1=="S" { st=$2; p=$3; if (NF>3) p=$NF
+				print st, (a[p]==""?"-":a[p]), (r[p]==""?"-":r[p]), p }'
+		git -C "$d" ls-files --others --exclude-standard 2>/dev/null | while IFS= read -r p; do
+			n="$(grep -c "" "$d/$p" 2>/dev/null)"; printf '?\t%s\t0\t%s\n' "${n:-0}" "$p"
+		done
+	else
+		git -C "$d" -c color.ui=never status --short 2>/dev/null |
+			awk -v OFS="$TAB" '{ st=substr($0,1,2); gsub(/ /,"",st); path=substr($0,4)
+				sub(/^.* -> /,"",path); print st, "-", "-", path }'
+	fi
+}
+
+if [ "$mode" = list ]; then
+	repos | while IFS= read -r d; do
+		base="$(repo_base "$d")"
+		repo_changes "$d" | while IFS="$TAB" read -r st plus minus path; do
+			[ -n "$path" ] && printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$d" "$base" "$st" "$plus" "$minus" "$path"
+		done
+	done
+	exit 0
+fi
+
+render() {
+	printf "${BLU}${B} %s${RST}   ${DIM}vs origin/main${RST}\n\n" "$disp"
+	repos | while IFS= read -r d; do
+		name="${d##*/}"; [ "$d" = "$root" ] && name="$name  (workspace)"
+		br="$(git -C "$d" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+		[ "$br" = "HEAD" ] && br="detached"
+		ch="$(repo_changes "$d")"
+		n="$(printf '%s' "$ch" | grep -c .)"
+		if [ "${n:-0}" -gt 0 ]; then
+			printf "${AMB}▍${RST} ${B}%-16s${RST} ${DIM}%s · %s changed${RST}\n" "$name" "$br" "$n"
+			printf '%s\n' "$ch" | head -14 | awk -F"$TAB" \
+				-v G="$GRN" -v R="$RED" -v D="$DIM" -v Z="$RST" '{
+					c = ($2 ~ /^[0-9]+$/) ? sprintf("  %s+%s %s-%s%s", G,$2, R,$3, Z) : ""
+					printf "    %-2s %s%s\n", $1, $4, c }'
+			[ "$n" -gt 14 ] && printf "${DIM}    … %s more${RST}\n" "$((n - 14))"
+			printf '\n'
+		else
+			printf "  ${DIM}%-16s %s · ${GRN}clean${RST}\n" "$name" "$br"
+		fi
+	done
+}
+
+[ "$mode" = once ] && { render; exit 0; }
+while :; do out="$(render)"; printf '\033[H\033[2J%b' "$out"; sleep 2; done

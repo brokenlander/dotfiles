@@ -1,0 +1,192 @@
+#!/usr/bin/env sh
+# pm-agent — start a PrivateMind coding agent in an isolated AgentN/ slot.
+#
+# Why a slot and not `cld --worktree`: privatemind is a *workspace* repo plus
+# five separate gitignored sub-repos (app, gateway, app-db, gateway-db, helm).
+# A single worktree can't span them, so isolation lives in AgentN/ dirs, each a
+# full set of per-repo worktrees (see the workspace CLAUDE.md). This:
+#   1. fetches the five canonical repos,
+#   2. claims a pristine AgentN slot (or creates the next N),
+#   3. resets/creates its five sub-repo worktrees to origin/main (detached),
+#   4. launches Claude from the privatemind ROOT so it keeps the global memory,
+#      handing it a brief that pins the slot,
+#   5. opens a live `diff` window = wstat AgentN (what the agent has touched).
+set -u
+
+mode=run; TARGET=""
+case "${1:-}" in
+	--dry-run | -n) mode=dry ;;
+	--slots | -l) mode=slots ;;
+	"") : ;;
+	*) TARGET="$1" ;;   # a target dir: privatemind → slot flow, else agent-in-repo
+esac
+
+WS="$HOME/forge/privatemind"
+REPOS="app gateway app-db gateway-db helm"
+TAB="$(printf '\t')"
+RECENT_SECS=$((48 * 3600))   # uncommitted work newer than this protects a slot
+[ -d "$WS/.git" ] || { printf 'pm-agent: %s is not the workspace checkout\n' "$WS" >&2; exit 1; }
+
+say() { printf '  %s\n' "$*"; }
+
+# Shared launcher: a claude session at $cwd (reads $diff_dir/.agent-brief as its
+# first message if present), a diff window watching $diff_dir, targeted by id.
+launch_session() {  # cwd  diff_dir  sess  [slot]
+	_cwd="$1"; _dd="$2"; _sess="$3"; _slot="${4:-}"
+	if [ -f "$_dd/.agent-brief" ]; then
+		_cmd="claude --dangerously-skip-permissions \"\$(cat '$_dd/.agent-brief')\""
+	else
+		_cmd="claude --dangerously-skip-permissions"
+	fi
+	sid="$(tmux new-session -d -P -F '#{session_id}' -s "$_sess" -c "$_cwd" "$_cmd" 2>/dev/null)"
+	[ -n "$sid" ] || { printf 'pm-agent: could not start the tmux session\n' >&2; exit 1; }
+	[ -n "$_slot" ] && tmux set-option -t "$sid" @pm_slot "$_slot"
+	tmux new-window -d -t "$sid" -n diff -c "$_dd" "$HOME/dotfiles/bin/wstat '$_dd'"
+	say "launched session $_sess (agent + diff window)"
+	if [ -n "${TMUX:-}" ]; then tmux switch-client -t "$sid"
+	else tmux attach -t "$sid"; fi
+}
+
+# Unique session name from a base (append -2, -3, … on collision).
+uniq_sess() {
+	_b="$1"; _s="$_b"; _i=2
+	while tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -qxF "$_s"; do
+		_s="$_b-$_i"; _i=$((_i + 1))
+	done
+	printf '%s' "$_s"
+}
+
+# A target that isn't the privatemind workspace → a plain agent in that repo
+# (its own cwd/memory, a diff window over it). No slot machinery.
+if [ -n "$TARGET" ]; then
+	TARGET="$(cd "$TARGET" 2>/dev/null && pwd)" ||
+		{ printf 'pm-agent: no such directory: %s\n' "$1" >&2; exit 1; }
+fi
+if [ -n "$TARGET" ] && [ "$TARGET" != "$WS" ]; then
+	repo="$(git -C "$TARGET" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$TARGET")"
+	say "agent in $repo"
+	launch_session "$repo" "$repo" "$(uniq_sess "$(basename "$repo")")"
+	exit 0
+fi
+
+# Who holds a slot? At launch we stamp the session with `@pm_slot <N>`, so the
+# owner is found by that option — rename-proof (session options survive
+# rename-session), and it reports the session's *current* name. A pane parked
+# *inside* the slot (a hand-run agent with no stamp) also counts.
+slot_holder() {
+	tmux list-sessions -F "#{@pm_slot}$TAB#{session_name}" 2>/dev/null |
+		awk -F"$TAB" -v n="$1" '$1==n {print $2; f=1; exit} END{exit !f}' && return 0
+	tmux list-panes -a -F '#{pane_current_path}' 2>/dev/null |
+		grep -qE "^$WS/Agent$1(/|\$)" && printf 'a pane'
+}
+
+# Does a slot have any uncommitted/untracked work?
+slot_dirty() {
+	for r in $REPOS; do
+		wt="$WS/Agent$1/$r"; [ -d "$wt" ] || continue
+		[ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ] && return 0
+	done
+	return 1
+}
+
+# Newest mtime (epoch) among a slot's uncommitted/untracked files, or empty.
+slot_newest_change() {
+	for r in $REPOS; do
+		wt="$WS/Agent$1/$r"; [ -d "$wt" ] || continue
+		git -C "$wt" status --porcelain 2>/dev/null | sed 's/^...//; s/.* -> //' |
+			while IFS= read -r f; do [ -e "$wt/$f" ] && stat -c %Y "$wt/$f" 2>/dev/null; done
+	done | sort -rn | head -1
+}
+
+# Uncommitted work touched within the last 48h — recent enough to protect.
+slot_recent() {
+	nw="$(slot_newest_change "$1")"; [ -n "$nw" ] || return 1
+	[ "$(( $(date +%s) - nw ))" -lt "$RECENT_SECS" ]
+}
+
+# Free (Andrea's rule): no tmux session holds it. Uncommitted work blocks reuse
+# only while it's fresh (< 48h); uncommitted work idle longer than that is fair
+# game — a reused slot resets it (bad hygiene = lost work). Committed branches
+# always survive (reuse only detaches, leaving the ref intact).
+slot_free() {
+	[ -d "$WS/Agent$1" ] || return 1
+	[ -n "$(slot_holder "$1")" ] && return 1
+	slot_recent "$1" && return 1
+	return 0
+}
+
+max=0
+for d in "$WS"/Agent[0-9]*; do
+	[ -d "$d" ] || continue
+	n="${d##*/Agent}"; case "$n" in *[!0-9]*) continue;; esac
+	[ "$n" -gt "$max" ] && max="$n"
+done
+
+# --slots: show occupancy for every slot, then exit. This is the tracker.
+if [ "$mode" = slots ]; then
+	printf '  PrivateMind agent slots (%s):\n\n' "$WS"
+	n=1
+	while [ "$n" -le "$max" ]; do
+		h="$(slot_holder "$n")"
+		if [ -n "$h" ]; then st="busy   · held by $h"
+		elif slot_recent "$n"; then st="in use · uncommitted <48h (won't reuse)"
+		elif slot_dirty "$n"; then st="FREE   · stale uncommitted >48h (resets on reuse)"
+		else st="FREE"; fi
+		printf '  Agent%-3s %s\n' "$n" "$st"
+		n=$((n + 1))
+	done
+	printf '\n  next new agent → Agent%s\n' "$( \
+		n=1; while [ "$n" -le "$max" ]; do slot_free "$n" && break; n=$((n + 1)); done; \
+		[ "$n" -le "$max" ] && echo "$n (reused)" || echo "$((max + 1))")"
+	exit 0
+fi
+
+slot=""
+n=1
+while [ "$n" -le "$max" ]; do
+	if slot_free "$n"; then slot="$n"; break; fi
+	n=$((n + 1))
+done
+[ -n "$slot" ] || slot=$((max + 1))
+dir="$WS/Agent$slot"
+say "slot → Agent$slot"
+[ "$mode" = dry ] && { say "(dry run — no worktrees created, no agent launched)"; exit 0; }
+
+say "fetching origin/main for the sub-repos…"
+for r in $REPOS; do
+	git -C "$WS/$r" fetch -q --prune origin 2>/dev/null &
+done
+wait
+
+mkdir -p "$dir"
+for r in $REPOS; do
+	wt="$dir/$r"
+	git -C "$WS/$r" worktree prune -q 2>/dev/null
+	if git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+		git -C "$wt" checkout -q --detach 2>/dev/null   # freeze the branch ref
+		git -C "$wt" reset -q --hard origin/main         # move detached HEAD only
+		git -C "$wt" clean -qfd                          # drop any stale untracked
+	else
+		git -C "$WS/$r" worktree add -q --detach "$wt" origin/main ||
+			{ say "! could not create $wt (stray dir?) — skipping"; continue; }
+	fi
+done
+say "sub-repos reset to origin/main"
+
+sess="$(uniq_sess "privatemind-a$slot")"
+
+cat >"$dir/.agent-brief" <<EOF
+Session bootstrap — do not treat this as a task.
+
+Your isolated worktree slot for this session is Agent$slot. Do ALL file work
+inside $dir/<repo> (app, gateway, app-db, gateway-db, helm) — never the canonical
+checkouts at $WS/<repo>. The five sub-repos here are freshly reset to origin/main
+on a detached HEAD; branch off before you start, e.g.
+  git -C Agent$slot/app checkout -b fix/issue-NNN
+Acknowledge in one line which slot you're in, then wait for my task.
+EOF
+
+# Claude launches from the workspace ROOT (keeps the global memory); the brief
+# pins the slot. The session is stamped with @pm_slot so ownership survives a
+# rename. cwd = $WS (memory), diff window watches the slot dir.
+launch_session "$WS" "$dir" "$sess" "$slot"
