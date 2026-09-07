@@ -1,0 +1,59 @@
+#!/bin/bash
+# Install the commit guards everywhere and report anything that could shadow them.
+#
+# Why this exists: core.hooksPath precedence is local > global > system, so a
+# single repo-local core.hooksPath silently disables the whole global guard set.
+# That is exactly how an AI co-author trailer reached privatemind-app main on
+# 2026-09-03 while the identical message was blocked in privatemind-helm.
+#
+# Belt and braces: the guards live in the global dir AND are symlinked into each
+# repo's own .git/hooks, so whichever path wins, the guard is present.
+#
+#   git-hooks-doctor            audit + install under the default roots
+#   git-hooks-doctor <dir>...   audit + install under specific roots
+#   git-hooks-doctor --check    audit only, non-zero if anything is unguarded
+
+SRC="$HOME/dotfiles/git-hooks"
+GLOBAL="$HOME/.git-hooks"
+HOOKS="pre-commit commit-msg prepare-commit-msg pre-push"
+CHECK=0
+[ "$1" = "--check" ] && { CHECK=1; shift; }
+ROOTS=${*:-"$HOME/forge $HOME/dotfiles"}
+RC=0
+
+# 1. the global set
+mkdir -p "$GLOBAL"
+for h in $HOOKS _guard-common.sh; do
+  if [ "$CHECK" = 1 ]; then
+    [ "$(readlink -f "$GLOBAL/$h" 2>/dev/null)" = "$(readlink -f "$SRC/$h")" ] || { echo "global   MISSING/STALE  $h"; RC=1; }
+  else
+    ln -sfn "$SRC/$h" "$GLOBAL/$h"
+  fi
+done
+cur=$(git config --global core.hooksPath)
+if [ "$cur" != "$GLOBAL" ] && [ "$cur" != "$GLOBAL/" ] && [ "$cur" != '~/.git-hooks/' ]; then
+  [ "$CHECK" = 1 ] && { echo "global   core.hooksPath is '$cur'"; RC=1; } || git config --global core.hooksPath "$GLOBAL"
+fi
+
+# 2. every repo, including ones that shadow the global dir
+for root in $ROOTS; do
+  [ -d "$root" ] || continue
+  while IFS= read -r g; do
+    d=$(dirname "$g")
+    [ -f "$g" ] && continue                       # worktree: shares the parent's hooks
+    hp=$(git -C "$d" config --local --get core.hooksPath 2>/dev/null)
+    tgt="$g/hooks"
+    [ -n "$hp" ] && tgt="$hp"
+    case "$tgt" in "$GLOBAL"*) continue;; esac    # already the guarded dir
+    for h in $HOOKS _guard-common.sh; do
+      if [ "$CHECK" = 1 ]; then
+        [ "$(readlink -f "$tgt/$h" 2>/dev/null)" = "$(readlink -f "$SRC/$h")" ] || { echo "UNGUARDED  $d  ($h via ${hp:-.git/hooks})"; RC=1; break; }
+      else
+        mkdir -p "$tgt" && ln -sfn "$SRC/$h" "$tgt/$h"
+      fi
+    done
+  done < <(find "$root" -maxdepth 4 -name .git 2>/dev/null)
+done
+
+[ "$CHECK" = 1 ] && { [ "$RC" = 0 ] && echo "all repos guarded"; exit $RC; }
+echo "guards installed"
