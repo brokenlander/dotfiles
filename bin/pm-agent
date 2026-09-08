@@ -13,10 +13,11 @@
 #   5. opens a live `diff` window = wstat AgentN (what the agent has touched).
 set -u
 
-mode=run; TARGET=""
+mode=run; TARGET=""; RS=""
 case "${1:-}" in
 	--dry-run | -n) mode=dry ;;
 	--slots | -l) mode=slots ;;
+	--reset | -r) mode=reset; RS="${2:-}" ;;   # restart a session in place (same slot/name, fresh main)
 	"") : ;;
 	*) TARGET="$1" ;;   # a target dir: privatemind → slot flow, else agent-in-repo
 esac
@@ -55,6 +56,67 @@ uniq_sess() {
 	done
 	printf '%s' "$_s"
 }
+
+# Fetch, then reset/create a slot's five sub-repo worktrees to a fresh origin/main.
+prep_slot() {  # $1 = slot number
+	_d="$WS/Agent$1"
+	say "fetching origin/main…"
+	for r in $REPOS; do git -C "$WS/$r" fetch -q --prune origin 2>/dev/null & done
+	wait
+	mkdir -p "$_d"
+	for r in $REPOS; do
+		wt="$_d/$r"
+		git -C "$WS/$r" worktree prune -q 2>/dev/null
+		if git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+			git -C "$wt" checkout -q --detach 2>/dev/null   # freeze the branch ref
+			git -C "$wt" reset -q --hard origin/main         # move detached HEAD only
+			git -C "$wt" clean -qfd                          # drop any stale untracked
+		else
+			git -C "$WS/$r" worktree add -q --detach "$wt" origin/main ||
+				say "! could not create $wt (stray dir?) — skipping"
+		fi
+	done
+	say "sub-repos reset to origin/main"
+}
+
+# Write the slot-pinning brief Claude reads as its first message.
+write_brief() {  # $1 = slot  $2 = dir
+	cat >"$2/.agent-brief" <<EOF
+Session bootstrap — do not treat this as a task.
+
+Your isolated worktree slot for this session is Agent$1. Do ALL file work
+inside $2/<repo> (app, gateway, app-db, gateway-db, helm) — never the canonical
+checkouts at $WS/<repo>. The five sub-repos here are freshly reset to origin/main
+on a detached HEAD; branch off before you start, e.g.
+  git -C Agent$1/app checkout -b fix/issue-NNN
+Acknowledge in one line which slot you're in, then wait for my task.
+EOF
+}
+
+# --reset: kill a session and relaunch a fresh one with the SAME name. A slot
+# agent keeps its slot and gets a fresh pull off main; a generic agent restarts
+# in its own repo (no destructive reset).
+if [ "$mode" = reset ]; then
+	rs="$RS"; [ -n "$rs" ] || rs="$(tmux display-message -p '#{session_name}' 2>/dev/null)"
+	[ -n "$rs" ] || { printf 'pm-agent: no session to reset\n' >&2; exit 1; }
+	rslot="$(tmux show-options -t "$rs" -v -q @pm_slot 2>/dev/null)"
+	if [ -n "$rslot" ] && [ -d "$WS/Agent$rslot" ]; then
+		dir="$WS/Agent$rslot"
+		say "resetting $rs (Agent$rslot) → fresh main…"
+		tmux kill-session -t "$rs" 2>/dev/null
+		prep_slot "$rslot"
+		write_brief "$rslot" "$dir"
+		launch_session "$WS" "$dir" "$rs" "$rslot"
+	else
+		cwd="$(tmux list-panes -t "$rs" -F '#{pane_current_command} #{pane_current_path}' 2>/dev/null |
+			awk '$1=="claude"{print $2; exit}')"
+		[ -n "$cwd" ] || cwd="$HOME"
+		say "restarting $rs in $cwd…"
+		tmux kill-session -t "$rs" 2>/dev/null
+		launch_session "$cwd" "$cwd" "$rs"
+	fi
+	exit 0
+fi
 
 # A target that isn't the privatemind workspace → a plain agent in that repo
 # (its own cwd/memory, a diff window over it). No slot machinery.
@@ -152,39 +214,9 @@ dir="$WS/Agent$slot"
 say "slot → Agent$slot"
 [ "$mode" = dry ] && { say "(dry run — no worktrees created, no agent launched)"; exit 0; }
 
-say "fetching origin/main for the sub-repos…"
-for r in $REPOS; do
-	git -C "$WS/$r" fetch -q --prune origin 2>/dev/null &
-done
-wait
-
-mkdir -p "$dir"
-for r in $REPOS; do
-	wt="$dir/$r"
-	git -C "$WS/$r" worktree prune -q 2>/dev/null
-	if git -C "$wt" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-		git -C "$wt" checkout -q --detach 2>/dev/null   # freeze the branch ref
-		git -C "$wt" reset -q --hard origin/main         # move detached HEAD only
-		git -C "$wt" clean -qfd                          # drop any stale untracked
-	else
-		git -C "$WS/$r" worktree add -q --detach "$wt" origin/main ||
-			{ say "! could not create $wt (stray dir?) — skipping"; continue; }
-	fi
-done
-say "sub-repos reset to origin/main"
-
+prep_slot "$slot"
 sess="$(uniq_sess "privatemind-a$slot")"
-
-cat >"$dir/.agent-brief" <<EOF
-Session bootstrap — do not treat this as a task.
-
-Your isolated worktree slot for this session is Agent$slot. Do ALL file work
-inside $dir/<repo> (app, gateway, app-db, gateway-db, helm) — never the canonical
-checkouts at $WS/<repo>. The five sub-repos here are freshly reset to origin/main
-on a detached HEAD; branch off before you start, e.g.
-  git -C Agent$slot/app checkout -b fix/issue-NNN
-Acknowledge in one line which slot you're in, then wait for my task.
-EOF
+write_brief "$slot" "$dir"
 
 # Claude launches from the workspace ROOT (keeps the global memory); the brief
 # pins the slot. The session is stamped with @pm_slot so ownership survives a

@@ -13,7 +13,8 @@ pushed to `brokenlander/dotfiles` and `brokenlander/agent-sidebar`.
   `;`-separated so `|`/`-` can be shown); `@agent_sidebar_exclude 'scratch'`.
   Removed the craftzdog claude-session-manager plugin.
 - **Legend:** `e sidebar · o agents · y sesh · s tree · d scratch · a new agent ·
-  q end agent · g diff · | split · - split · x close`.
+  q end agent · r reset · g diff · | split · - split · x close`.
+  (config-reload moved from `prefix r` to **`prefix R`**.)
 - Nav keys: sidebar `prefix e`, agent picker `prefix o`, sesh `prefix y`,
   choose-tree `prefix s`, scratch `prefix d` (detach `prefix D`). Split: `|`
   (left/right), `-` (top/bottom). "Merge"/un-split = `prefix x` (close a pane).
@@ -42,6 +43,10 @@ pushed to `brokenlander/dotfiles` and `brokenlander/agent-sidebar`.
   an AgentN slot, resets it to origin/main (clean, reusable). **No prompt**
   (`run-shell -b`, backgrounded). Committed branches survive; uncommitted in the
   slot is discarded. A generic (non-slot) agent is just closed, repo untouched.
+- **`prefix r` = reset agent → `pm-agent --reset`:** kill + relaunch a fresh agent
+  with the **same name in the same slot**, repos freshly pulled off main. Runs in
+  a progress popup (needs a client for switch-client). A generic agent restarts in
+  its own repo (no destructive reset). The conversation restarts fresh (new session).
 - **`bin/wstat`** — the live `diff` window: every repo in the slot + its footprint
   **vs the fork point from origin/main** (committed + staged/unstaged + untracked),
   **+/- per file**, every 2s. So each agent's window shows *only that agent's
