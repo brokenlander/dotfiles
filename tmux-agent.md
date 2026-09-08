@@ -90,7 +90,8 @@ brief, not by running inside `AgentN/`.
   → a plain agent in that repo.
 - **`pm-agent [dir]`** — claim a FREE `AgentN` slot (or make next N) → reset its 5
   sub-repos to origin/main → launch `claude` from the privatemind ROOT with a
-  brief pinning the slot → open a `diff` window (`wstat AgentN`). Stamps
+  brief pinning the slot → open a `diff` window (`wstat AgentN`); the agent's own
+  window is named **`Cyan`** (explicit `-n`, so tmux won't auto-rename it). Stamps
   `@pm_slot <N>` (rename-proof; targets tmux by session-id).
   - **Free-slot rule:** busy only while a tmux session holds it (`privatemind-a<N>`
     via `@pm_slot`, or a pane inside the slot). **48h guard:** uncommitted work
@@ -147,15 +148,17 @@ tag hook), `skipDangerousModePermissionPrompt` (skips the bypass startup confirm
 `effortLevel`, `tui`, `enabledPlugins`.
 
 **`statusline.sh`** — reads the session JSON on stdin, prints a one-line status.
-Model tier **aliases** (edit the block at the top): Opus→**Swift**, Sonnet→**mini**,
+Model tier **aliases** (edit the block at the top): Fable→**Prime**, Opus→**Swift**, Sonnet→**mini**,
 Haiku→**nano**. Current format: `<model> · <dir> · <branch> · <ctx%>` (model in
 cyan; the `🦋 Cyan` brand prefix was removed since the tmux bar already shows it —
 the `EMOJI`/`BRAND` vars remain, unused, for an easy re-add).
 
 **`themes/cyan.json`** — custom theme, activated via `settings.json`
 `"theme": "custom:cyan"`. Tokyo Night palette (brand cyan `#7dcfff`), tuned diffs,
-full subagent color set. The **`permission` token is dimmed** to fade the bypass
-banner. **Gotcha:** the themes folder must exist at Claude Code startup — created
+full subagent color set. The `⏵⏵ bypass permissions` footer is driven by the
+**`error`** token (shared with error text and the don't-ask mode — there is no
+bypass-only token); it's set to the agent-counter grey `#565f89` so it reads as
+parked rather than shouting. `permission` was never the lever. **Gotcha:** the themes folder must exist when the CLI starts — created
 mid-session it needs ONE restart to be watched; after that, edits hot-reload
 (the statusline hot-reloads always).
 
@@ -170,10 +173,10 @@ honest). This is the identity layer — in-conversation it's already "Cyan," not
 - **Startup banner rebrand → NOT achievable via config.** The `Claude Code`
   wordmark is hardcoded; no setting/env/plugin overrides it. Only patching would,
   which is the ToS line we won't cross.
-- **Bypass-permissions indicator** (`⏵⏵ bypass permissions on`) — dimmed via the
-  `permission` theme token (verify it faded; if not, move the dim to the token
-  that actually drives it). It **cannot be hidden** while in bypass mode — only
-  leaving bypass (shift+tab) removes it.
+- **Bypass-permissions indicator** (`⏵⏵ bypass permissions on`) — DONE 2026-09-08:
+  it's the **`error`** token (pulled from the bundle's mode→color map), matched to
+  the `← N agent` counter grey. Cost: error text shares the tone. It **cannot be
+  hidden** while in bypass mode — only leaving bypass (shift+tab) removes it.
 - **102 older `~/dotfiles` commits still `Andrea Moccia <gmail>`** — a full-history
   scrub to brokenlander is offered but **needs an explicit go** (rewrites every
   hash + force-push; back up a ref first).

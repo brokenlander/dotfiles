@@ -39,7 +39,7 @@ launch_session() {  # cwd  diff_dir  sess  [slot]
 	else
 		_cmd="claude --dangerously-skip-permissions"
 	fi
-	sid="$(tmux new-session -d -P -F '#{session_id}' -s "$_sess" -c "$_cwd" "$_cmd" 2>/dev/null)"
+	sid="$(tmux new-session -d -P -F '#{session_id}' -s "$_sess" -n Cyan -c "$_cwd" "$_cmd" 2>/dev/null)"
 	[ -n "$sid" ] || { printf 'pm-agent: could not start the tmux session\n' >&2; exit 1; }
 	[ -n "$_slot" ] && tmux set-option -t "$sid" @pm_slot "$_slot"
 	tmux new-window -d -t "$sid" -n diff -c "$_dd" "$HOME/dotfiles/bin/wstat '$_dd'"
