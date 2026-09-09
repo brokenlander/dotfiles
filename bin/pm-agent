@@ -8,19 +8,27 @@
 #   1. fetches the five canonical repos,
 #   2. claims a pristine AgentN slot (or creates the next N),
 #   3. resets/creates its five sub-repo worktrees to origin/main (detached),
-#   4. launches Claude from the privatemind ROOT so it keeps the global memory,
-#      handing it a brief that pins the slot,
+#   4. launches the chosen agent (claude/opencode/codex — see pm-agent-defs)
+#      from the privatemind ROOT so it keeps the global memory, handing it a
+#      brief that pins the slot,
 #   5. opens a live `diff` window = wstat AgentN (what the agent has touched).
 set -u
+. "$HOME/dotfiles/bin/pm-agent-defs"
 
-mode=run; TARGET=""; RS=""
-case "${1:-}" in
-	--dry-run | -n) mode=dry ;;
-	--slots | -l) mode=slots ;;
-	--reset | -r) mode=reset; RS="${2:-}" ;;   # restart a session in place (same slot/name, fresh main)
-	"") : ;;
-	*) TARGET="$1" ;;   # a target dir: privatemind → slot flow, else agent-in-repo
-esac
+mode=run; TARGET=""; RS=""; AGENT_ID=""; AGENT_EXPLICIT=0
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--agent | -a) AGENT_ID="${2:-}"; AGENT_EXPLICIT=1; shift; [ $# -gt 0 ] && shift ;;
+	--dry-run | -n) mode=dry; shift ;;
+	--slots | -l) mode=slots; shift ;;
+	--reset | -r) mode=reset; shift   # restart a session in place (same slot/name/agent, fresh main)
+		case "${1:-}" in -* | "") : ;; *) RS="$1"; shift ;; esac ;;
+	*) TARGET="$1"; shift ;;   # a target dir: privatemind → slot flow, else agent-in-repo
+	esac
+done
+[ -n "$AGENT_ID" ] || AGENT_ID="$(agent_last)"
+agent_valid "$AGENT_ID" ||
+	{ printf 'pm-agent: unknown agent %s (known: %s)\n' "$AGENT_ID" "$PM_AGENTS" >&2; exit 1; }
 
 WS="$HOME/forge/privatemind"
 REPOS="app gateway app-db gateway-db helm"
@@ -30,20 +38,20 @@ RECENT_SECS=$((48 * 3600))   # uncommitted work newer than this protects a slot
 
 say() { printf '  %s\n' "$*"; }
 
-# Shared launcher: a claude session at $cwd (reads $diff_dir/.agent-brief as its
-# first message if present), a diff window watching $diff_dir, targeted by id.
+# Shared launcher: an $AGENT_ID session at $cwd (reads $diff_dir/.agent-brief as
+# its first message if present), a diff window watching $diff_dir, targeted by
+# id. The session is stamped @pm_agent so --reset relaunches the same agent.
 launch_session() {  # cwd  diff_dir  sess  [slot]
 	_cwd="$1"; _dd="$2"; _sess="$3"; _slot="${4:-}"
-	if [ -f "$_dd/.agent-brief" ]; then
-		_cmd="claude --dangerously-skip-permissions \"\$(cat '$_dd/.agent-brief')\""
-	else
-		_cmd="claude --dangerously-skip-permissions"
-	fi
-	sid="$(tmux new-session -d -P -F '#{session_id}' -s "$_sess" -n Cyan -c "$_cwd" "$_cmd" 2>/dev/null)"
+	_cmd="$(agent_cmd "$AGENT_ID" "$_dd/.agent-brief")"
+	sid="$(tmux new-session -d -P -F '#{session_id}' -s "$_sess" \
+		-n "$(agent_window "$AGENT_ID")" -c "$_cwd" "$_cmd" 2>/dev/null)"
 	[ -n "$sid" ] || { printf 'pm-agent: could not start the tmux session\n' >&2; exit 1; }
+	tmux set-option -t "$sid" @pm_agent "$AGENT_ID"
+	agent_remember "$AGENT_ID"
 	[ -n "$_slot" ] && tmux set-option -t "$sid" @pm_slot "$_slot"
 	tmux new-window -d -t "$sid" -n diff -c "$_dd" "$HOME/dotfiles/bin/wstat '$_dd'"
-	say "launched session $_sess (agent + diff window)"
+	say "launched session $_sess ($AGENT_ID + diff window)"
 	if [ -n "${TMUX:-}" ]; then tmux switch-client -t "$sid"
 	else tmux attach -t "$sid"; fi
 }
@@ -99,6 +107,8 @@ EOF
 if [ "$mode" = reset ]; then
 	rs="$RS"; [ -n "$rs" ] || rs="$(tmux display-message -p '#{session_name}' 2>/dev/null)"
 	[ -n "$rs" ] || { printf 'pm-agent: no session to reset\n' >&2; exit 1; }
+	ragent="$(tmux show-options -t "$rs" -v -q @pm_agent 2>/dev/null)"
+	[ "$AGENT_EXPLICIT" = 1 ] || { agent_valid "$ragent" && AGENT_ID="$ragent"; }
 	rslot="$(tmux show-options -t "$rs" -v -q @pm_slot 2>/dev/null)"
 	if [ -n "$rslot" ] && [ -d "$WS/Agent$rslot" ]; then
 		dir="$WS/Agent$rslot"
@@ -109,7 +119,8 @@ if [ "$mode" = reset ]; then
 		launch_session "$WS" "$dir" "$rs" "$rslot"
 	else
 		cwd="$(tmux list-panes -t "$rs" -F '#{pane_current_command} #{pane_current_path}' 2>/dev/null |
-			awk '$1=="claude"{print $2; exit}')"
+			awk -v ags="$PM_AGENTS" 'BEGIN{n=split(ags,a," ")}
+				{for(i=1;i<=n;i++) if($1==a[i]) {print $2; exit}}')"
 		[ -n "$cwd" ] || cwd="$HOME"
 		say "restarting $rs in $cwd…"
 		tmux kill-session -t "$rs" 2>/dev/null

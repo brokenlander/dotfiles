@@ -87,12 +87,18 @@ brief, not by running inside `AgentN/`.
 
 - **`prefix a` → `pm-agent-pick`** — fuzzy dir picker (privatemind pinned, zoxide
   dirs, `ctrl-f` finds any dir under `$HOME`). privatemind → a slot; any other dir
-  → a plain agent in that repo.
+  → a plain agent in that repo. **Enter launches whichever agent you used last**,
+  so the common case costs no extra keystroke; **`^y` claude · `^o` opencode ·
+  `^x` codex** pick a different one and that becomes the new default. (Built on
+  fzf `--expect` — this fzf is 0.44 and has no `transform-border-label`, so the
+  agent can't be cycled live inside the picker.)
 - **`pm-agent [dir]`** — claim a FREE `AgentN` slot (or make next N) → reset its 5
-  sub-repos to origin/main → launch `claude` from the privatemind ROOT with a
-  brief pinning the slot → open a `diff` window (`wstat AgentN`); the agent's own
-  window is named **`Cyan`** (explicit `-n`, so tmux won't auto-rename it). Stamps
-  `@pm_slot <N>` (rename-proof; targets tmux by session-id).
+  sub-repos to origin/main → launch the chosen agent from the privatemind ROOT
+  with a brief pinning the slot → open a `diff` window (`wstat AgentN`); the
+  agent's own window is named after it (**`Cyan`** for claude, else the agent
+  name) via an explicit `-n`, so tmux won't auto-rename it. Stamps `@pm_slot <N>`
+  and `@pm_agent <id>` (rename-proof; targets tmux by session-id).
+  - `--agent <id>` (`-a`) picks the agent; without it, the last-used one.
   - **Free-slot rule:** busy only while a tmux session holds it (`privatemind-a<N>`
     via `@pm_slot`, or a pane inside the slot). **48h guard:** uncommitted work
     blocks reuse only while fresh (<48h); older is reset on reuse. Committed
@@ -102,6 +108,14 @@ brief, not by running inside `AgentN/`.
   origin/main (clean, reusable). No prompt (`run-shell -b`).
 - **`prefix r` → `pm-agent --reset`** — kill + relaunch a fresh agent, **same
   name/slot**, repos pulled fresh off main. Generic agents restart in place.
+- **`pm-agent-defs`** — the **agent registry**, sourced by the picker, the
+  launcher and the resurrector so all three agree. One entry per agent gives its
+  tmux window name, its launch command (each takes the slot brief as a first
+  message: claude positionally, codex positionally, opencode via `--prompt`) and
+  its resume command. Last-used agent is remembered in
+  `${XDG_STATE_HOME:-~/.local/state}/pm-agent/last-agent`, written on every
+  successful launch. **Add an agent here and the picker, reset and resurrection
+  all pick it up.**
 - **`wstat [dir]`** — the live `diff` dashboard: each repo's footprint vs its fork
   point from origin/main (committed + uncommitted + untracked), **+/- per file**.
   So each agent's window shows *only that agent's work*. `wstat --list DIR` is the
@@ -122,10 +136,16 @@ or `prefix Ctrl-s`); the systemd `tmux-resurrect-save` timer also auto-saves ~ev
   (an `if-shell` on server-start in the conf).
 - **`~/dotfiles/tmux/claude-pane-hook.sh`** (SessionStart hook, wired in
   `settings.json`) tags each pane `@claude_session` = the session id.
-- **`~/dotfiles/tmux/claude-panes.sh`** (resurrect save/restore hooks):
-  - **save** → records each Claude pane's session/window/pane/path/id/args.
-  - **restore** → re-runs `claude <args> --resume <id>` per pane, keeping
-    `--dangerously-skip-permissions`.
+- **`~/dotfiles/tmux/claude-panes.sh`** (resurrect save/restore hooks) — handles
+  every agent in the registry; the filename is historical (the tmux hooks
+  reference it).
+  - **save** → records each agent pane's session/window/pane/path/**agent**/id/args.
+  - **restore** → relaunches per agent: `claude <args> --resume <id>`,
+    `opencode --continue`, `codex … resume --last`.
+  - **Fidelity caveat:** only claude exposes a per-pane session id, so only claude
+    resumes the *exact* conversation. opencode continues the newest session for
+    that project dir (usually right); codex's `--last` is global, so two codex
+    panes restored together both land on the same conversation.
 
 **Two bugs fixed 2026-09-07/08 (commit `b61ed2c`):**
 1. `args_of` kept positional args, so a slot's bootstrap prompt was replayed ahead

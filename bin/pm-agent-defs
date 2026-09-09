@@ -1,0 +1,80 @@
+#!/usr/bin/env sh
+# pm-agent-defs — the agent registry. Sourced by pm-agent, pm-agent-pick and
+# tmux/claude-panes.sh so all three agree on how each agent is named, launched
+# and resumed. Add a new agent here and the picker, launcher, reset and
+# resurrection all pick it up.
+#
+# Every agent must support an initial prompt (we hand it the slot brief) and
+# some form of resume (used after a tmux restart).
+
+PM_AGENTS="claude opencode codex"
+PM_AGENT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/pm-agent"
+
+# Single-quote a string for embedding in a shell command.
+shq() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
+
+agent_valid() {
+	for _a in $PM_AGENTS; do [ "$1" = "$_a" ] && return 0; done
+	return 1
+}
+
+# tmux window name for an agent's own pane.
+agent_window() {
+	case "$1" in
+	claude) printf 'Cyan' ;;
+	*) printf '%s' "$1" ;;
+	esac
+}
+
+# The command tmux runs to START an agent. $2 = brief file; if it exists its
+# contents become the agent's first message.
+agent_cmd() {
+	_b="${2:-}"
+	[ -n "$_b" ] && [ -f "$_b" ] || _b=""
+	case "$1" in
+	claude)
+		if [ -n "$_b" ]; then printf 'claude --dangerously-skip-permissions "$(cat %s)"' "$(shq "$_b")"
+		else printf 'claude --dangerously-skip-permissions'; fi ;;
+	codex)
+		if [ -n "$_b" ]; then printf 'codex --dangerously-bypass-approvals-and-sandbox "$(cat %s)"' "$(shq "$_b")"
+		else printf 'codex --dangerously-bypass-approvals-and-sandbox'; fi ;;
+	opencode)
+		if [ -n "$_b" ]; then printf 'opencode --prompt "$(cat %s)"' "$(shq "$_b")"
+		else printf 'opencode'; fi ;;
+	*) return 1 ;;
+	esac
+}
+
+# The command to RESUME an agent after a tmux restart. $2 = session id, only
+# claude has a per-pane one; opencode and codex resume their newest session
+# instead (opencode's is scoped to the project dir, codex's is global — so two
+# codex panes restored at once both land on the same conversation).
+agent_resume_cmd() {
+	_id="${2:-}"; _args="${3:-}"
+	case "$1" in
+	claude)
+		[ -n "$_id" ] || return 1
+		printf 'claude %s --resume %s' "$_args" "$_id" ;;
+	opencode) printf 'opencode --continue' ;;
+	codex) printf 'codex --dangerously-bypass-approvals-and-sandbox resume --last' ;;
+	*) return 1 ;;
+	esac
+}
+
+# Last agent Andrea launched — the picker's Enter default.
+agent_last() {
+	_l="$(cat "$PM_AGENT_STATE/last-agent" 2>/dev/null)"
+	agent_valid "$_l" && printf '%s' "$_l" || printf 'claude'
+}
+
+agent_remember() {
+	agent_valid "$1" || return 1
+	mkdir -p "$PM_AGENT_STATE" 2>/dev/null
+	printf '%s\n' "$1" >"$PM_AGENT_STATE/last-agent"
+}
+
+# Match a pane's running command to an agent id (for save/restore + reset).
+agent_of_command() {
+	for _a in $PM_AGENTS; do [ "$1" = "$_a" ] && { printf '%s' "$_a"; return 0; }; done
+	return 1
+}
