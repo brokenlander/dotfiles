@@ -160,8 +160,11 @@ brief, not by running inside `AgentN/`.
   point from origin/main (committed + uncommitted + untracked), **+/- per file**.
   So each agent's window shows *only that agent's work*. `wstat --list DIR` is the
   machine feed. **`--once`/`--list` must be the FIRST arg** or it hangs.
-- **`wdiff [--watch] [dir]` (`prefix g`)** — fzf list + live delta preview; Enter =
-  full diff, `q` back, ctrl-r refresh. Full-screen popup. Replaced lazygit.
+- **`wdiff [dir]` (`prefix g`)** — fzf list + live delta preview; Enter = full
+  diff, `q` back, ctrl-r refresh. Full-screen popup. Replaced lazygit. (A
+  `--watch` mode existed to make the `diff` window an fzf picker; Andrea
+  rejected that in favour of the wstat dashboard, so it had no caller and was
+  removed 2026-09-10.)
 - **`wclick`** — the click-to-diff handler behind the `MouseDown1Pane` binding.
 - **`pm-roster`** — the address book for agent-to-agent messaging: one line per
   live agent giving the name a peer addresses it by, where it is working (its

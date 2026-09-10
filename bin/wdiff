@@ -1,12 +1,15 @@
 #!/usr/bin/env sh
-# wdiff [--watch] [dir]
+# wdiff [dir]
 #   Pick a changed file anywhere under dir (a workspace, or one AgentN slot) and
 #   read its line-level diff. fzf list (with +/- per file) + a live delta preview;
 #   Enter opens the full side-by-side/git-style diff, q returns to the list,
-#   ctrl-r refreshes, esc quits. --watch keeps the pane alive: it waits for the
-#   first change, shows the picker, and re-opens it on exit — for the agent's
-#   diff window. Without --watch (e.g. the prefix+g popup) it just says so and
-#   exits when nothing has changed. The lazygit-free drill-in. See wstat.
+#   ctrl-r refreshes, esc quits. When nothing has changed it says so and exits.
+#   The lazygit-free drill-in.
+#
+#   There was a --watch mode that kept the pane alive and re-opened the picker,
+#   written to make an agent's `diff` window an fzf picker. That was rejected in
+#   favour of keeping it the wstat dashboard, so the mode had no caller and is
+#   gone. See wstat.
 set -u
 WSTAT="$HOME/dotfiles/bin/wstat"
 TAB="$(printf '\t')"
@@ -25,7 +28,6 @@ if [ "${1:-}" = "--gen" ]; then
 	exit 0
 fi
 
-watch=0; [ "${1:-}" = "--watch" ] && { watch=1; shift; }
 DIR="${1:-$PWD}"
 
 # Diff for the selected row. fzf shell-quotes {2}/{3}/{7}, so spaces are safe.
@@ -41,16 +43,6 @@ picker() {
 		>/dev/null
 }
 
-if [ "$watch" = 1 ]; then
-	while :; do
-		while [ -z "$("$0" --gen "$DIR")" ]; do
-			printf '\033[H\033[2J  watching %s\n  for changes vs origin/main…\n' "$DIR"
-			sleep 2
-		done
-		picker
-	done
-else
-	[ -n "$("$0" --gen "$DIR")" ] ||
-		{ printf '  nothing changed vs origin/main under %s\n' "$DIR"; sleep 1.4; exit 0; }
-	picker
-fi
+[ -n "$("$0" --gen "$DIR")" ] ||
+	{ printf '  nothing changed vs origin/main under %s\n' "$DIR"; sleep 1.4; exit 0; }
+picker
