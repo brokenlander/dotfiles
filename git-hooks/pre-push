@@ -8,6 +8,7 @@
 . "$(dirname "$(readlink -f "$0")")/_guard-common.sh"
 
 KIND=$(guard_remote_kind "$(git rev-parse --show-toplevel)")
+REMOTE="${1:-origin}"
 ZERO=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
 FAIL=0
 report() { echo "  $1"; FAIL=1; }
@@ -17,10 +18,15 @@ REFS=$(cat)
 
 while read -r lref lsha rref rsha; do
   [ "$lsha" = "$ZERO" ] && continue            # branch deletion
+  # Judge only what this push actually introduces to the remote. Excluding
+  # refs already on it matters for a merge: bringing the default branch into
+  # a stale feature branch makes every commit it carries "new to the branch",
+  # and re-judging published history blocks the merge over commits that
+  # predate these guards and cannot be rewritten now.
   if [ "$rsha" = "$ZERO" ]; then
-    range="$lsha --not --remotes"              # new branch
+    range="$lsha --not --remotes=$REMOTE"      # new branch
   else
-    range="$rsha..$lsha"
+    range="$rsha..$lsha --not --remotes=$REMOTE"
   fi
   for c in $(git rev-list $range 2>/dev/null); do
     subj=$(git log -1 --format=%s "$c")
