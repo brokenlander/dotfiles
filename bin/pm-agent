@@ -363,8 +363,20 @@ if [ "$mode" = prune ]; then
 				say "ended $b (Agent$a released)" ||
 				{ say "! could not end $b"; kept=$((kept + 1)); } ;;
 		branch)
-			git -C "$WS/$a" branch -d "$b" >/dev/null 2>&1 ||
-				{ say "! kept $a/$b (git refused)"; kept=$((kept + 1)); } ;;
+			# -d measures against the branch's UPSTREAM, which for a renamed or
+			# re-targeted PR is a different branch entirely — so it refuses refs
+			# that are demonstrably in origin/main. Re-assert the guarantee we
+			# actually rely on, and only then force. The commits still live in
+			# main either way; what goes is the label.
+			if git -C "$WS/$a" branch -d "$b" >/dev/null 2>&1; then
+				:
+			elif git -C "$WS/$a" merge-base --is-ancestor "$b" origin/main 2>/dev/null &&
+				git -C "$WS/$a" branch -D "$b" >/dev/null 2>&1; then
+				:
+			else
+				say "! kept $a/$b (not an ancestor of origin/main)"
+				kept=$((kept + 1))
+			fi ;;
 		esac
 	done <"$plan"
 	say "pruned$( [ "$kept" -gt 0 ] && printf ', %s kept back' "$kept" )"

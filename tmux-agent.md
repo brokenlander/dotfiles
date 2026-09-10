@@ -154,7 +154,11 @@ brief, not by running inside `AgentN/`.
   plan and changes nothing** — `--prune --yes` applies it. A slot a session
   holds is never touched, an ad-hoc worktree with uncommitted work younger than
   48h protects itself (same rule as the slots), and a branch checked out in any
-  worktree is left alone — so a branch freed by a removal in the same run gets
+  worktree is left alone. It tries `-d` first, but `-d` measures against a
+  branch's **upstream** — which for a renamed or re-targeted PR is some other
+  remote branch entirely — so it refuses refs that are demonstrably in
+  origin/main; on that refusal the ancestry is re-asserted against origin/main
+  and only then forced — so a branch freed by a removal in the same run gets
   picked up on the next one.
 - **`wstat [dir]`** — the live `diff` dashboard: each repo's footprint vs its fork
   point from origin/main (committed + uncommitted + untracked), **+/- per file**.
