@@ -32,7 +32,17 @@ one-click nav. Built with `make` in `~/forge/agent-sidebar`; launched by the
 - **Options (`~/dotfiles/tmux/.tmux.conf`):** `@agent_sidebar_key 'e'`,
   `@agent_sidebar_width '28'`, `@agent_sidebar_sessions 'on'`,
   `@agent_sidebar_exclude 'scratch'`, `@agent_sidebar_picker_key 'o'`,
-  `@agent_sidebar_legend '…'` (see below).
+  `@agent_sidebar_idle_wait '10'`, `@agent_sidebar_legend '…'` (see below).
+- **Amber ("needs you") is inferred** (2026-09-10). Claude never reports a
+  `waiting` status — under bypass it is never blocked on a permission prompt —
+  so the state was dead for every row but opencode's. An agent idle past
+  `@agent_sidebar_idle_wait` minutes is promoted to waiting, so it colours and
+  sorts with what wants you. It is a display rule over `statusUpdatedAt` (the
+  age column), **not** a hook: the scanner reads both `~/.claude/sessions/` and
+  the plugin dir and does **not** dedup by pid, so a hook writing a second file
+  for a Claude pid would show that agent twice, and writing into Claude's own
+  session file gets clobbered by the next status change. Parked agents are
+  exempt.
 - **Legend separator is `;`** (not `|`) so the `|`/`-` split keys can be shown.
 - Reads its options **once at startup** → re-exec after changing them.
 - Width-hold on resize; one control (open/close every session at once via a
