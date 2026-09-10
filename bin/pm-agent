@@ -207,6 +207,35 @@ slot_holder() {
 		grep -qE "^$WS/Agent$1(/|\$)" && printf 'a pane'
 }
 
+# Every session that has a stake in a slot, by name — the stamped one and any
+# session with a pane sitting inside the slot directory.
+slot_sessions() {  # $1 = slot number
+	{
+		tmux list-sessions -F "#{@pm_slot}$TAB#{session_name}" 2>/dev/null |
+			awk -F"$TAB" -v n="$1" '$1==n {print $2}'
+		tmux list-panes -a -F "#{pane_current_path}$TAB#{session_name}" 2>/dev/null |
+			awk -F"$TAB" -v pfx="$WS/Agent$1" \
+				'$1==pfx || index($1, pfx "/")==1 {print $2}'
+	} | awk 'NF && !seen[$0]++'
+}
+
+# Is any agent still ALIVE in the sessions holding this slot? A dead agent
+# leaves its session standing — the `diff` window keeps it alive — so the slot
+# stays claimed forever. A SessionEnd hook would not catch this: the cases that
+# matter are the crash and the kill, which fire no hook.
+slot_orphaned() {  # $1 = slot number
+	_h="$(mktemp)"
+	slot_sessions "$1" >"$_h"
+	[ -s "$_h" ] || { rm -f "$_h"; return 1; }   # nobody holds it at all
+	tmux list-panes -a -F "#{session_name}$TAB#{pane_current_command}" 2>/dev/null |
+		awk -F"$TAB" -v ags="$PM_AGENTS" -v f="$_h" '
+			BEGIN{n=split(ags,a," "); while((getline l < f) > 0) hold[l]=1}
+			($1 in hold) {for(i=1;i<=n;i++) if($2==a[i]) {found=1; exit}}
+			END{exit !found}' && { rm -f "$_h"; return 1; }
+	rm -f "$_h"
+	return 0   # held, but nothing in it is an agent any more
+}
+
 # Does a slot have any uncommitted/untracked work?
 slot_dirty() {
 	for r in $REPOS; do
@@ -285,6 +314,13 @@ if [ "$mode" = prune ]; then
 				done <"$co"
 			done
 			slot_dirty "$n" && printf 'reset%s%s\n' "$TAB" "$n" >>"$plan"
+		elif slot_orphaned "$n"; then
+			# the agent is gone but its session stands, holding the slot.
+			# Kill only the session; leave the worktrees to reuse, which
+			# applies the 48h guard to whatever it left behind.
+			slot_sessions "$n" | while IFS= read -r os; do
+				printf 'orphan%s%s%s%s\n' "$TAB" "$n" "$TAB" "$os"
+			done >>"$plan"
 		fi
 		n=$((n + 1))
 	done
@@ -304,6 +340,7 @@ if [ "$mode" = prune ]; then
 	awk -F"$TAB" -v OFS=' ' '
 		$1=="worktree" { printf "  drop worktree  %s\n", $3 }
 		$1=="reset"    { printf "  reset slot     Agent%s (stale uncommitted)\n", $2 }
+		$1=="orphan"   { printf "  end session    %s — holds Agent%s with no agent left\n", $3, $2 }
 		$1=="branch"   { b[$2]++ }
 		END { for (r in b) printf "  merged branch  %s: %d\n", r, b[r] }' "$plan"
 	if [ "$YES" != 1 ]; then
@@ -321,6 +358,10 @@ if [ "$mode" = prune ]; then
 			then say "removed $b"
 			else say "! could not remove $b"; kept=$((kept + 1)); fi ;;
 		reset) prep_slot "$a" ;;
+		orphan)
+			tmux kill-session -t "$b" 2>/dev/null &&
+				say "ended $b (Agent$a released)" ||
+				{ say "! could not end $b"; kept=$((kept + 1)); } ;;
 		branch)
 			git -C "$WS/$a" branch -d "$b" >/dev/null 2>&1 ||
 				{ say "! kept $a/$b (git refused)"; kept=$((kept + 1)); } ;;
@@ -337,7 +378,9 @@ if [ "$mode" = slots ]; then
 	n=1
 	while [ "$n" -le "$max" ]; do
 		h="$(slot_holder "$n")"
-		if [ -n "$h" ]; then st="busy   · held by $h"
+		if [ -n "$h" ] && slot_orphaned "$n"; then
+			st="orphan · $h has no agent left (prefix q, or --prune)"
+		elif [ -n "$h" ]; then st="busy   · held by $h"
 		elif slot_recent "$n"; then st="in use · uncommitted <48h (won't reuse)"
 		elif slot_dirty "$n"; then st="FREE   · stale uncommitted >48h (resets on reuse)"
 		else st="FREE"; fi

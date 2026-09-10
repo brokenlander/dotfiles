@@ -118,6 +118,13 @@ brief, not by running inside `AgentN/`.
     via `@pm_slot`, or a pane inside the slot). **48h guard:** uncommitted work
     blocks reuse only while fresh (<48h); older is reset on reuse. Committed
     branches always survive (reuse only detaches).
+  - **Orphaned slots** (added 2026-09-10): when an agent dies its session keeps
+    standing — the `diff` window holds it up — so the slot stays claimed
+    forever. `--slots` now reports `orphan` when nothing in the holding sessions
+    is a live agent, and `--prune` offers to end them. Inferred, not hooked: a
+    `SessionEnd` hook misses exactly the cases that matter, since a crash or a
+    kill fires nothing. Prune ends only the session and leaves the worktrees to
+    reuse's 48h guard.
   - `pm-agent --slots` (`-l`) tracker · `--dry-run` (`-n`) shows the pick.
 - **`prefix q` → `pm-agent-end`** — kill the session; if it's a slot, reset it to
   origin/main (clean, reusable). No prompt (`run-shell -b`).
