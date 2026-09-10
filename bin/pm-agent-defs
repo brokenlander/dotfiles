@@ -92,10 +92,26 @@ agent_of_command() {
 # brief and via a shell when the brief has to be interpolated, so the pane pid
 # is either claude itself or claude's parent. Its session file — the sidebar's
 # and the resurrector's source of truth — is keyed by this pid.
-claude_pid_of() {  # $1 = pane pid
-	[ -n "${1:-}" ] || return 1
-	[ "$(cat "/proc/$1/comm" 2>/dev/null)" = claude ] && { printf '%s' "$1"; return 0; }
-	_c="$(pgrep -x claude -P "$1" 2>/dev/null | head -n 1)"
+agent_pid_of() {  # $1 = pane pid, $2 = agent id
+	[ -n "${1:-}" ] && [ -n "${2:-}" ] || return 1
+	[ "$(cat "/proc/$1/comm" 2>/dev/null)" = "$2" ] && { printf '%s' "$1"; return 0; }
+	_c="$(pgrep -x "$2" -P "$1" 2>/dev/null | head -n 1)"
 	[ -n "$_c" ] || return 1
 	printf '%s' "$_c"
+}
+
+claude_pid_of() { agent_pid_of "${1:-}" claude; }
+
+# Where an agent publishes its own state, keyed by pid. Claude writes its file
+# natively; every other agent goes through a producer into the sidebar's state
+# dir — the same file shape, which is what lets one reader serve all of them.
+# See ~/forge/agent-sidebar/producers/README.md.
+agent_state_json() {  # $1 = pane pid, $2 = agent id -> path, or nothing
+	_p="$(agent_pid_of "${1:-}" "${2:-}")" || return 1
+	case "$2" in
+	claude) _f="$HOME/.claude/sessions/$_p.json" ;;
+	*) _f="${XDG_STATE_HOME:-$HOME/.local/state}/agent-sidebar/agents/$_p.json" ;;
+	esac
+	[ -f "$_f" ] || return 1
+	printf '%s' "$_f"
 }
