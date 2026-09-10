@@ -32,7 +32,7 @@ one-click nav. Built with `make` in `~/forge/agent-sidebar`; launched by the
 - **Options (`~/dotfiles/tmux/.tmux.conf`):** `@agent_sidebar_key 'e'`,
   `@agent_sidebar_width '28'`, `@agent_sidebar_sessions 'on'`,
   `@agent_sidebar_exclude 'scratch'`, `@agent_sidebar_picker_key 'o'`,
-  `@agent_sidebar_idle_wait '10'`, `@agent_sidebar_legend '…'` (see below).
+  `@agent_sidebar_idle_wait '30'`, `@agent_sidebar_legend '…'` (see below).
 - **Amber ("needs you") is inferred** (2026-09-10). Claude never reports a
   `waiting` status — under bypass it is never blocked on a permission prompt —
   so the state was dead for every row but opencode's. An agent idle past
