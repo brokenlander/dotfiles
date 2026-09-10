@@ -91,6 +91,14 @@ save)
     wout=$wf; [ -n "$ts" ] && wout="$dir/wstat-panes_$ts.tsv"
     save_wstat > "$wout.tmp" &&
         mv "$wout.tmp" "$wout" && { [ "$wout" = "$wf" ] || ln -sfn "$(basename "$wout")" "$wf"; }
+    # Expire on the same clock resurrect uses for its own saves, so a list and
+    # the layout it belongs to disappear together. One save every 30 minutes
+    # means these accumulate a hundred-odd files a day if nothing reaps them.
+    keep=$(tmux show-option -gqv @resurrect-delete-backup-after 2>/dev/null)
+    case "$keep" in '' | *[!0-9]*) keep=30 ;; esac
+    find "$dir" -maxdepth 1 -type f \
+        \( -name 'claude-panes_*.tsv' -o -name 'wstat-panes_*.tsv' \) \
+        -mtime "+$keep" -delete 2>/dev/null
     ;;
 restore)
     [ -s "$f" ] || [ -s "$wf" ] || exit 0
