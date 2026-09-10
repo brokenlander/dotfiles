@@ -1,0 +1,63 @@
+#!/usr/bin/env sh
+# pm-roster — who is running, where, and what they are touching.
+#
+# The address book for agent-to-agent messaging: every row's first column is
+# the name a peer addresses (`SendMessage` to it, after `ListAgents`). Meant to
+# be read, not watched — one line each, and a peer is worth interrupting rarely.
+#
+# The "what" is mostly free: the tmux session name is already the topic, and
+# the slot's worktrees say which repos are in play.
+set -u
+. "$HOME/dotfiles/bin/pm-agent-defs"
+WS="${PM_WS:-$HOME/forge/privatemind}"
+TAB="$(printf '\t')"
+
+# session -> slot / stamped agent, for the sessions that have one
+opts="$(mktemp)"; trap 'rm -f "$opts" "$panes"' EXIT
+tmux list-sessions -F "#{session_name}$TAB#{@pm_slot}$TAB#{@pm_agent}" 2>/dev/null >"$opts"
+
+# one row per session that still has a live agent in it
+panes="$(mktemp)"
+tmux list-panes -a -F "#{session_name}$TAB#{pane_pid}$TAB#{pane_current_command}" 2>/dev/null |
+	awk -F"$TAB" -v ags="$PM_AGENTS" 'BEGIN{n=split(ags,a," ")}
+		{for(i=1;i<=n;i++) if($3==a[i] && !seen[$1]++) {print; next}}' >"$panes"
+
+[ -s "$panes" ] || { printf '  no agents running\n'; exit 0; }
+
+printf '  %-22s %-28s %s\n' 'who' 'where' 'state'
+printf '  %-22s %-28s %s\n' '----------------------' '----------------------------' '-----'
+
+while IFS="$TAB" read -r sess ppid cmd; do
+	slot="$(awk -F"$TAB" -v s="$sess" '$1==s {print $2; exit}' "$opts")"
+
+	# where it is working. A slot says which of its repos have work in them,
+	# which is the closest thing to "what" that is free; anything else can only
+	# report the directory it was launched in.
+	if [ -n "$slot" ] && [ -d "$WS/Agent$slot" ]; then
+		repos="$("$HOME/dotfiles/bin/wstat" --list "$WS/Agent$slot" 2>/dev/null |
+			awk -F"$TAB" '{n=split($1,p,"/"); if(!seen[p[n]]++) printf "%s%s", (c++?", ":""), p[n]}')"
+		where="a$slot: ${repos:-clean}"
+	else
+		where="$(basename "$(tmux display -p -t "$(printf '%s' "$sess" | sed 's/:/\\:/g')" '#{pane_current_path}' 2>/dev/null)" 2>/dev/null)"
+		[ -n "$where" ] || where='-'
+	fi
+
+	# state: only claude publishes one; the others just show as running
+	state='running'
+	if [ "$cmd" = claude ]; then
+		cpid="$(claude_pid_of "$ppid")" || cpid=""
+		if [ -n "$cpid" ] && [ -f "$HOME/.claude/sessions/$cpid.json" ]; then
+			state="$(jq -r '
+				(.status // "?") as $s
+				| (((now * 1000) - (.statusUpdatedAt // 0)) / 60000 | floor) as $m
+				| if $m > 0 then "\($s) \($m)m" else $s end' \
+				"$HOME/.claude/sessions/$cpid.json" 2>/dev/null)"
+			[ -n "$state" ] || state='running'
+		fi
+	fi
+
+	printf '  %-22.22s %-28.28s %s\n' "$sess" "$where" "$state"
+done <"$panes"
+
+printf '\n  message one: ListAgents for the live list, then SendMessage to its name.\n'
+printf '  Rarely — a message costs the other agent a turn.\n'

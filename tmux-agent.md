@@ -163,6 +163,14 @@ brief, not by running inside `AgentN/`.
 - **`wdiff [--watch] [dir]` (`prefix g`)** — fzf list + live delta preview; Enter =
   full diff, `q` back, ctrl-r refresh. Full-screen popup. Replaced lazygit.
 - **`wclick`** — the click-to-diff handler behind the `MouseDown1Pane` binding.
+- **`pm-roster`** — the address book for agent-to-agent messaging: one line per
+  live agent giving the name a peer addresses it by, where it is working (its
+  slot and which of that slot's repos have work, or the dir it was launched in)
+  and its state. The "what" is close to free because the tmux session name is
+  already the topic. `~/.claude/CLAUDE.md` points every agent at it, so they can
+  find each other without being told. **Sparingly** — a message costs the
+  recipient a whole turn, and a one-line question has triggered a 90-second
+  investigation.
 
 ---
 
