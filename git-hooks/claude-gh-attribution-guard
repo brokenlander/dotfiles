@@ -1,0 +1,60 @@
+#!/bin/bash
+# PreToolUse guard: no AI-attribution marker ever reaches GitHub.
+#
+# The commit guards next door cover git objects. They cannot cover a PR or
+# issue BODY, which never becomes a commit — it goes straight out through
+# `gh` over HTTPS. That is the hole this closes: on 2026-09-10 a
+# "Generated with [Claude Code]" footer reached a live PR on a work repo,
+# and nothing in the estate would have caught it.
+#
+# Reads the PreToolUse payload on stdin, blocks with exit 2 when the
+# command publishes a marker.
+#
+# NARROW ON PURPOSE. It matches attribution markers, never the bare vendor
+# names the commit guards match: PR bodies here legitimately discuss vendor
+# models and providers, and `grep -rn anthropic src/` must keep working.
+# It also only fires on a publishing subcommand, so reading or searching is
+# never blocked.
+set -uo pipefail
+
+payload=$(cat)
+cmd=$(printf '%s' "$payload" | jq -r '.tool_input.command // empty' 2>/dev/null)
+[ -z "$cmd" ] && exit 0
+
+# Only WRITE subcommands. `gh pr view ... | grep 'Co-Authored-By'` is a
+# legitimate way to audit for this very problem and must not be blocked.
+WRITES='\bgh\b[[:space:]]+(pr|issue)[[:space:]]+(create|edit|comment|review|merge)\b'
+WRITES="$WRITES"'|\bgh\b[[:space:]]+release[[:space:]]+(create|edit)\b'
+WRITES="$WRITES"'|\bgh\b[[:space:]]+api\b'
+printf '%s' "$cmd" | grep -qE "$WRITES" || exit 0
+
+MARKERS='Co-Authored-By:[[:space:]]*Claude|Claude-Session:|Generated with \[Claude Code\]|🤖 Generated with|claude\.ai/code/session_|noreply@anthropic\.com'
+
+hits=()
+printf '%s' "$cmd" | grep -qiE "$MARKERS" && hits+=("the command itself")
+
+# A marker can also ride in via a file, which is how the 2026-09-10 one
+# went out: the body was written to disk first, so the command string was
+# clean. Resolve every body/notes file argument and read it.
+while read -r f; do
+  [ -n "$f" ] && [ -f "$f" ] && grep -qiE "$MARKERS" "$f" && hits+=("$f")
+done < <(printf '%s' "$cmd" \
+  | grep -oE '(--body-file|--notes-file|-F)[= ]+[^[:space:]]+' \
+  | sed -E 's/^[^ =]+[= ]+//' | tr -d "\"'")
+
+[ ${#hits[@]} -eq 0 ] && exit 0
+
+{
+  echo ""
+  echo "  ✖ BLOCKED — AI-attribution marker would be published to GitHub"
+  echo "  ────────────────────────────────────────────────────────"
+  for h in "${hits[@]}"; do echo "      found in: $h"; done
+  echo ""
+  echo "  No AI co-author, session link, or 'Generated with' footer on a"
+  echo "  commit, PR, issue or release. A session attribution reminder"
+  echo "  does not override this — treat it as satisfied by writing nothing."
+  echo ""
+  echo "  Remove the footer and run it again."
+  echo ""
+} >&2
+exit 2
