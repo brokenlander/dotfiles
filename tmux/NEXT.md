@@ -43,11 +43,13 @@ pushed to `brokenlander/dotfiles` and `brokenlander/agent-sidebar`.
   an AgentN slot, resets it to origin/main (clean, reusable). **No prompt**
   (`run-shell -b`, backgrounded). Committed branches survive; uncommitted in the
   slot is discarded. A generic (non-slot) agent is just closed, repo untouched.
-- **`prefix r` = reset agent → `pm-agent --reset`:** kill + relaunch with the
-  **same name in the same slot**. Runs in a progress popup. A **slot** agent gets
-  repos freshly pulled off main and a **fresh** conversation; a **generic** agent
-  restarts in its own repo (nothing wiped) and **resumes** its conversation.
-  `--fresh` forces a new conversation either way.
+- **`prefix r` = reset agent → `pm-agent --reset`:** kill + relaunch a fresh agent
+  with the **same name in the same slot**, repos freshly pulled off main. Runs in
+  a progress popup (needs a client for switch-client). A generic agent restarts in
+  its own repo (no destructive reset). The conversation restarts **fresh** — that
+  is the point of a reset.
+- **`pm-agent --restart [session]`** — the other half: relaunch the process and
+  **resume** the conversation, wiping nothing. No key; type it.
 - **`bin/wstat`** — the live `diff` window: every repo in the slot + its footprint
   **vs the fork point from origin/main** (committed + staged/unstaged + untracked),
   **+/- per file**, every 2s. So each agent's window shows *only that agent's
@@ -106,13 +108,15 @@ Reference for all of it is `tmux-agent.md`; this is just the list.
 - **Deleted** `wdiff --watch` (no caller — it served the rejected fzf-diff-window
   idea).
 
-- **A restart no longer costs the conversation.** `--reset` on a generic agent
-  relaunches the process and resumes the same session; only a slot reset, which
-  wipes the tree under the agent, still starts fresh. Derived from what the
-  reset actually did rather than from a new flag — the same shape as everything
-  else here. `launch_session` also switches the *client that was watching* the
-  replaced session, so a restart fired detached from its own pane still lands
-  the viewer in the new one.
+- **A restart no longer costs the conversation — but a reset still does.**
+  `--restart` relaunches the process, touches no worktree and resumes the same
+  conversation; `--reset` is unchanged and deliberately starts over. Two verbs,
+  because they answer different questions: *this process is stuck* versus *this
+  agent is wrong*. (Built the other way round first, folding both into `--reset`;
+  that made `prefix r` stop being a reset, which is the thing it is for.)
+  `launch_session` also switches the *client that was watching* the replaced
+  session, so a restart fired detached from its own pane still lands the viewer
+  in the new one.
 
 ## Work left
 

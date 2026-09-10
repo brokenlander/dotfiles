@@ -128,15 +128,17 @@ brief, not by running inside `AgentN/`.
   - `pm-agent --slots` (`-l`) tracker · `--dry-run` (`-n`) shows the pick.
 - **`prefix q` → `pm-agent-end`** — kill the session; if it's a slot, reset it to
   origin/main (clean, reusable). No prompt (`run-shell -b`).
-- **`prefix r` → `pm-agent --reset`** — kill + relaunch, **same name/slot**.
-  What happens to the *conversation* follows from what happened to the tree,
-  rather than being a second choice: a **slot** agent has its five worktrees
-  reset to origin/main under it, so it comes back on a **fresh** conversation
-  (resuming one that believes in wiped work is worse than starting over); a
-  **generic** agent's repo is untouched, so it comes back **resumed** — same
-  process restarted, same conversation. `--fresh` forces a new one. Only claude
-  resumes an exact conversation (see the resume-fidelity note above).
-  The id is read from the live process's session file, never the pane's
+- **`prefix r` → `pm-agent --reset`** — **start over**: kill + relaunch, same
+  name/slot, a slot's repos pulled fresh off main, and a **new conversation**
+  briefed from scratch. When an agent has gone wrong, what it believed is part
+  of what went wrong.
+- **`pm-agent --restart [session]`** — **same agent, new process**: nothing is
+  wiped (no worktree touched, slot kept) and the conversation is **resumed**.
+  For a wedged process, or to pick up a shell snapshot taken after a config
+  change — a restart that used to cost the conversation. No key binding; it is
+  the deliberate one. Only claude resumes an exact conversation (see the
+  resume-fidelity note above), so for the other two it degrades to a fresh
+  start. The id is read from the live process's session file, never the pane's
   `@claude_session` tag, which goes stale on resume and compact.
 - **`pm-agent --rename`** — sync the display name of every *live* Claude session
   to its tmux session name (for sessions started before `--name`, or after a

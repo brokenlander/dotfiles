@@ -15,7 +15,7 @@
 set -u
 . "$HOME/dotfiles/bin/pm-agent-defs"
 
-mode=run; TARGET=""; RS=""; AGENT_ID=""; AGENT_EXPLICIT=0; YES=0; FRESH=0
+mode=run; TARGET=""; RS=""; AGENT_ID=""; AGENT_EXPLICIT=0; YES=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--agent | -a) AGENT_ID="${2:-}"; AGENT_EXPLICIT=1; shift; [ $# -gt 0 ] && shift ;;
@@ -24,7 +24,8 @@ while [ $# -gt 0 ]; do
 	--rename) mode=rename; shift ;;   # sync live display names to their tmux session names
 	--prune) mode=prune; shift ;;     # reclaim stale worktrees, slots and merged branches
 	--yes | -y) YES=1; shift ;;       # let --prune actually apply its plan
-	--fresh) FRESH=1; shift ;;        # --reset: start a NEW conversation, don't resume
+	--restart) mode=restart; shift   # relaunch the process, KEEP the conversation
+		case "${1:-}" in -* | "") : ;; *) RS="$1"; shift ;; esac ;;
 	--reset | -r) mode=reset; shift   # restart a session in place (same slot/name/agent, fresh main)
 		case "${1:-}" in -* | "") : ;; *) RS="$1"; shift ;; esac ;;
 	*) TARGET="$1"; shift ;;   # a target dir: privatemind → slot flow, else agent-in-repo
@@ -184,25 +185,53 @@ if [ "$mode" = rename ]; then
 	exit 0
 fi
 
-# --reset: kill a session and relaunch it with the SAME name. What happens to
-# the CONVERSATION follows from what happened to the tree, rather than being a
-# separate choice:
-#   slot agent    → the five worktrees are reset to origin/main under it, so a
-#                   resumed conversation would believe in work that no longer
-#                   exists. Fresh conversation, always.
-#   generic agent → nothing is wiped (its repo is untouched), so the process
-#                   restarts and the conversation is resumed. `--fresh` opts out.
+# Two verbs that both kill a session and relaunch it under the SAME name, kept
+# apart because they answer different questions:
+#
+#   --reset    start over. A slot's five worktrees go back to origin/main and
+#              the agent comes back on a NEW conversation, briefed from scratch.
+#              This is `prefix r`: when an agent has gone wrong, everything it
+#              believed is part of what went wrong.
+#   --restart  same agent, new process. Nothing is wiped — no worktree is
+#              touched, the slot is kept — and the conversation is RESUMED. For
+#              when the process itself is the problem: it is wedged, or it needs
+#              a shell snapshot taken after a config change.
+#
 # Only claude can resume an exact conversation; opencode continues the newest
-# session for the dir and codex's `resume --last` is global (pm-agent-defs).
-if [ "$mode" = reset ]; then
+# session for the dir and codex's `resume --last` is global (pm-agent-defs), so
+# --restart degrades to a fresh start for anything that cannot resume.
+if [ "$mode" = reset ] || [ "$mode" = restart ]; then
 	rs="$RS"; [ -n "$rs" ] || rs="$(tmux display-message -p '#{session_name}' 2>/dev/null)"
-	[ -n "$rs" ] || { printf 'pm-agent: no session to reset\n' >&2; exit 1; }
+	[ -n "$rs" ] || { printf 'pm-agent: no session to %s\n' "$mode" >&2; exit 1; }
 	ragent="$(tmux show-options -t "$rs" -v -q @pm_agent 2>/dev/null)"
 	[ "$AGENT_EXPLICIT" = 1 ] || { agent_valid "$ragent" && AGENT_ID="$ragent"; }
 	rslot="$(tmux show-options -t "$rs" -v -q @pm_slot 2>/dev/null)"
 	# Whoever is watching the session being replaced follows it to the new one.
 	PM_CLIENT="$(tmux list-clients -t "$rs" -F '#{client_name}' 2>/dev/null | head -n 1)"
 	export PM_CLIENT
+	# An agent's own cwd, for a session that holds no slot.
+	rcwd="$(tmux list-panes -s -t "$rs" -F '#{pane_current_command} #{pane_current_path}' 2>/dev/null |
+		awk -v ags="$PM_AGENTS" 'BEGIN{n=split(ags,a," ")}
+			{for(i=1;i<=n;i++) if($1==a[i]) {print $2; exit}}')"
+	[ -n "$rcwd" ] || rcwd="$HOME"
+
+	if [ "$mode" = restart ]; then
+		# Read the conversation off the LIVE process, before it is killed.
+		rcmd="$(session_resume_cmd "$rs")"
+		[ -n "$rcmd" ] || say "no conversation to resume — starting fresh"
+		if [ -n "$rslot" ] && [ -d "$WS/Agent$rslot" ]; then
+			say "restarting $rs (Agent$rslot), worktrees untouched…"
+			tmux kill-session -t "$rs" 2>/dev/null
+			[ -n "$rcmd" ] || write_brief "$rslot" "$WS/Agent$rslot"
+			launch_session "$WS" "$WS/Agent$rslot" "$rs" "$rslot" "$rcmd"
+		else
+			say "restarting $rs in $rcwd…"
+			tmux kill-session -t "$rs" 2>/dev/null
+			launch_session "$rcwd" "$rcwd" "$rs" "" "$rcmd"
+		fi
+		exit 0
+	fi
+
 	if [ -n "$rslot" ] && [ -d "$WS/Agent$rslot" ]; then
 		dir="$WS/Agent$rslot"
 		say "resetting $rs (Agent$rslot) → fresh main, fresh conversation…"
@@ -211,16 +240,9 @@ if [ "$mode" = reset ]; then
 		write_brief "$rslot" "$dir"
 		launch_session "$WS" "$dir" "$rs" "$rslot"
 	else
-		cwd="$(tmux list-panes -s -t "$rs" -F '#{pane_current_command} #{pane_current_path}' 2>/dev/null |
-			awk -v ags="$PM_AGENTS" 'BEGIN{n=split(ags,a," ")}
-				{for(i=1;i<=n;i++) if($1==a[i]) {print $2; exit}}')"
-		[ -n "$cwd" ] || cwd="$HOME"
-		rcmd=""
-		[ "$FRESH" = 1 ] || rcmd="$(session_resume_cmd "$rs")"
-		if [ -n "$rcmd" ]; then say "restarting $rs in $cwd, same conversation…"
-		else say "restarting $rs in $cwd, fresh conversation…"; fi
+		say "resetting $rs in $rcwd → fresh conversation…"
 		tmux kill-session -t "$rs" 2>/dev/null
-		launch_session "$cwd" "$cwd" "$rs" "" "$rcmd"
+		launch_session "$rcwd" "$rcwd" "$rs"
 	fi
 	exit 0
 fi
