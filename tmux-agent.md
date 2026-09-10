@@ -130,6 +130,15 @@ brief, not by running inside `AgentN/`.
   `${XDG_STATE_HOME:-~/.local/state}/pm-agent/last-agent`, written on every
   successful launch. **Add an agent here and the picker, reset and resurrection
   all pick it up.**
+- **`pm-agent --prune`** — reclaim what finished sessions leave behind: the
+  ad-hoc worktrees they cut beside the canonical five, free slots still holding
+  stale edits, and local branches git says are already **merged into
+  origin/main** (the commits are in main; only the ref goes). It **prints the
+  plan and changes nothing** — `--prune --yes` applies it. A slot a session
+  holds is never touched, an ad-hoc worktree with uncommitted work younger than
+  48h protects itself (same rule as the slots), and a branch checked out in any
+  worktree is left alone — so a branch freed by a removal in the same run gets
+  picked up on the next one.
 - **`wstat [dir]`** — the live `diff` dashboard: each repo's footprint vs its fork
   point from origin/main (committed + uncommitted + untracked), **+/- per file**.
   So each agent's window shows *only that agent's work*. `wstat --list DIR` is the
@@ -218,4 +227,5 @@ honest). This is the identity layer — in-conversation it's already "Cyan," not
   scrub to brokenlander is offered but **needs an explicit go** (rewrites every
   hash + force-push; back up a ref first).
 - **memories / personality** — further Cyan customization to explore.
-- `pm-agent --prune` — reset stale/merged slots back to main on demand.
+- `PM_WS` / `PM_REPOS` override the workspace and its sub-repo list, so the
+  destructive paths can be exercised against a throwaway checkout.

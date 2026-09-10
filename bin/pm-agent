@@ -15,13 +15,15 @@
 set -u
 . "$HOME/dotfiles/bin/pm-agent-defs"
 
-mode=run; TARGET=""; RS=""; AGENT_ID=""; AGENT_EXPLICIT=0
+mode=run; TARGET=""; RS=""; AGENT_ID=""; AGENT_EXPLICIT=0; YES=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--agent | -a) AGENT_ID="${2:-}"; AGENT_EXPLICIT=1; shift; [ $# -gt 0 ] && shift ;;
 	--dry-run | -n) mode=dry; shift ;;
 	--slots | -l) mode=slots; shift ;;
 	--rename) mode=rename; shift ;;   # sync live display names to their tmux session names
+	--prune) mode=prune; shift ;;     # reclaim stale worktrees, slots and merged branches
+	--yes | -y) YES=1; shift ;;       # let --prune actually apply its plan
 	--reset | -r) mode=reset; shift   # restart a session in place (same slot/name/agent, fresh main)
 		case "${1:-}" in -* | "") : ;; *) RS="$1"; shift ;; esac ;;
 	*) TARGET="$1"; shift ;;   # a target dir: privatemind → slot flow, else agent-in-repo
@@ -31,8 +33,10 @@ done
 agent_valid "$AGENT_ID" ||
 	{ printf 'pm-agent: unknown agent %s (known: %s)\n' "$AGENT_ID" "$PM_AGENTS" >&2; exit 1; }
 
-WS="$HOME/forge/privatemind"
-REPOS="app gateway app-db gateway-db helm"
+# Overridable so the destructive paths (--prune, --reset) can be exercised
+# against a throwaway workspace instead of the real one.
+WS="${PM_WS:-$HOME/forge/privatemind}"
+REPOS="${PM_REPOS:-app gateway app-db gateway-db helm}"
 TAB="$(printf '\t')"
 RECENT_SECS=$((48 * 3600))   # uncommitted work newer than this protects a slot
 [ -d "$WS/.git" ] || { printf 'pm-agent: %s is not the workspace checkout\n' "$WS" >&2; exit 1; }
@@ -244,6 +248,88 @@ for d in "$WS"/Agent[0-9]*; do
 	n="${d##*/Agent}"; case "$n" in *[!0-9]*) continue;; esac
 	[ "$n" -gt "$max" ] && max="$n"
 done
+
+# An ad-hoc worktree is fair game on the same 48h rule the slots use: clean, or
+# untouched long enough that leaving it dirty was a choice. Commits are never at
+# risk — removing a worktree leaves its branch ref behind.
+wt_stale() {  # $1 = worktree path
+	[ -n "$(git -C "$1" status --porcelain 2>/dev/null)" ] || return 0
+	_nw="$(git -C "$1" status --porcelain 2>/dev/null | sed 's/^...//; s/.* -> //' |
+		while IFS= read -r f; do [ -e "$1/$f" ] && stat -c %Y "$1/$f" 2>/dev/null; done |
+		sort -rn | head -1)"
+	[ -n "$_nw" ] || return 0
+	[ "$(( $(date +%s) - _nw ))" -ge "$RECENT_SECS" ]
+}
+
+# --prune: reclaim what finished sessions leave behind — the ad-hoc worktrees
+# they cut beside the canonical five, free slots still holding stale edits, and
+# local branches git itself says are already merged into origin/main (their
+# commits are in main, so the ref is the only thing dropped). Slots a session
+# holds are never touched. Prints the plan and changes NOTHING without --yes.
+if [ "$mode" = prune ]; then
+	say "fetching origin/main…"
+	for r in $REPOS; do git -C "$WS/$r" fetch -q --prune origin 2>/dev/null & done
+	wait
+	plan="$(mktemp)"; co="$(mktemp)"
+
+	n=1
+	while [ "$n" -le "$max" ]; do
+		if slot_free "$n"; then
+			for r in $REPOS; do
+				git -C "$WS/$r" worktree list --porcelain 2>/dev/null |
+					awk '/^worktree /{print $2}' |
+					grep -E "^$WS/Agent$n/" | grep -vxF "$WS/Agent$n/$r" >"$co"
+				while IFS= read -r wt; do
+					[ -n "$wt" ] || continue
+					wt_stale "$wt" && printf 'worktree%s%s%s%s\n' "$TAB" "$r" "$TAB" "$wt" >>"$plan"
+				done <"$co"
+			done
+			slot_dirty "$n" && printf 'reset%s%s\n' "$TAB" "$n" >>"$plan"
+		fi
+		n=$((n + 1))
+	done
+
+	# a branch checked out in some worktree is off limits; git -d refuses it too,
+	# but excluding it here keeps the plan honest about what will actually go
+	for r in $REPOS; do
+		git -C "$WS/$r" worktree list --porcelain 2>/dev/null |
+			awk '/^branch /{sub("refs/heads/","",$2); print $2}' | sort -u >"$co"
+		git -C "$WS/$r" branch --merged origin/main --format '%(refname:short)' 2>/dev/null |
+			grep -vxE 'main|master' | grep -vxFf "$co" |
+			sed "s|^|branch$TAB$r$TAB|" >>"$plan"
+	done
+	rm -f "$co"
+
+	[ -s "$plan" ] || { say "nothing to prune"; rm -f "$plan"; exit 0; }
+	awk -F"$TAB" -v OFS=' ' '
+		$1=="worktree" { printf "  drop worktree  %s\n", $3 }
+		$1=="reset"    { printf "  reset slot     Agent%s (stale uncommitted)\n", $2 }
+		$1=="branch"   { b[$2]++ }
+		END { for (r in b) printf "  merged branch  %s: %d\n", r, b[r] }' "$plan"
+	if [ "$YES" != 1 ]; then
+		say ""
+		say "nothing changed — rerun as: pm-agent --prune --yes"
+		rm -f "$plan"; exit 0
+	fi
+
+	say ""
+	kept=0
+	while IFS="$TAB" read -r kind a b; do
+		case "$kind" in
+		worktree)
+			if git -C "$WS/$a" worktree remove --force "$b" 2>/dev/null
+			then say "removed $b"
+			else say "! could not remove $b"; kept=$((kept + 1)); fi ;;
+		reset) prep_slot "$a" ;;
+		branch)
+			git -C "$WS/$a" branch -d "$b" >/dev/null 2>&1 ||
+				{ say "! kept $a/$b (git refused)"; kept=$((kept + 1)); } ;;
+		esac
+	done <"$plan"
+	say "pruned$( [ "$kept" -gt 0 ] && printf ', %s kept back' "$kept" )"
+	rm -f "$plan"
+	exit 0
+fi
 
 # --slots: show occupancy for every slot, then exit. This is the tracker.
 if [ "$mode" = slots ]; then
