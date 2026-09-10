@@ -9,6 +9,7 @@
 . "$HOME/dotfiles/bin/pm-agent-defs"
 dir=${XDG_DATA_HOME:-$HOME/.local/share}/tmux/resurrect
 f=$dir/claude-panes.tsv
+wf=$dir/wstat-panes.tsv
 tab=$(printf '\t')
 
 args_of() {
@@ -45,6 +46,30 @@ tag_panes() {
     done
 }
 
+# The `diff` dashboards need restoring for the same reason the agents do:
+# tmux-resurrect only restores a pane's PROGRAM when @resurrect-processes is
+# set, and it is not — so every pane comes back as a bare shell. Agents are
+# relaunched below; without this, wstat is not, and the window whose whole job
+# is showing an agent's work comes back empty.
+#
+# wstat is a `sh` script, so pane_current_command is "sh" and cannot identify
+# it. Read the pane process's argv instead.
+wstat_dir_of() {  # $1 = pane pid -> the dir wstat is watching, or nothing
+    _c=$(tr '\0' ' ' < "/proc/$1/cmdline" 2>/dev/null) || return 1
+    case "$_c" in *bin/wstat\ *) : ;; *) return 1 ;; esac
+    _d=${_c#*bin/wstat }; _d=${_d%% *}
+    [ -n "$_d" ] || return 1
+    printf '%s' "$_d"
+}
+
+save_wstat() {
+    tmux list-panes -a -F "#{session_name}${tab}#{window_index}${tab}#{pane_index}${tab}#{pane_pid}" |
+    while IFS="$tab" read -r s w p ppid; do
+        d=$(wstat_dir_of "$ppid") || continue
+        printf '%s\t%s\t%s\t%s\n' "$s" "$w" "$p" "$d"
+    done
+}
+
 case "$1" in
 args) args_of "$2" ;;
 tag) tag_panes ;;
@@ -63,12 +88,15 @@ save)
               if($5=="claude" && $6=="") next   # claude needs its session id
               print $1,$2,$3,$4,$5,$6,$7 }' > "$out.tmp" &&
         mv "$out.tmp" "$out" && { [ "$out" = "$f" ] || ln -sfn "$(basename "$out")" "$f"; }
+    wout=$wf; [ -n "$ts" ] && wout="$dir/wstat-panes_$ts.tsv"
+    save_wstat > "$wout.tmp" &&
+        mv "$wout.tmp" "$wout" && { [ "$wout" = "$wf" ] || ln -sfn "$(basename "$wout")" "$wf"; }
     ;;
 restore)
-    [ -s "$f" ] || exit 0
+    [ -s "$f" ] || [ -s "$wf" ] || exit 0
     sleep 2
     # resolve every target to a pane id first: killing a pane renumbers the rest
-    launch=$(while IFS="$tab" read -r s w p path agent id args; do
+    launch=$([ -s "$f" ] && while IFS="$tab" read -r s w p path agent id args; do
         pid=$(tmux display -p -t "=$s:$w.$p" '#{pane_id}' 2>/dev/null) || continue
         printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$pid" "$path" "$agent" "$id" "$s" "$args"
     done < "$f")
@@ -79,7 +107,7 @@ restore)
         pid=$(tmux display -p -t "=$s:$w.$p" '#{pane_id}' 2>/dev/null) || continue
         case "$(tmux display -p -t "$pid" '#{pane_current_command}')" in *sh) tmux kill-pane -t "$pid" ;; esac
     done
-    printf '%s\n' "$launch" | while IFS="$tab" read -r pid path agent id sess args; do
+    [ -n "$launch" ] && printf '%s\n' "$launch" | while IFS="$tab" read -r pid path agent id sess args; do
         [ -n "$pid" ] || continue
         tmux display -p -t "$pid" '' >/dev/null 2>&1 || continue
         # already running an agent? leave it alone
@@ -88,7 +116,33 @@ restore)
         tmux send-keys -t "$pid" "cd '$path' && $cmd" Enter
         sleep 1
     done
+    [ -s "$wf" ] || exit 0
+    while IFS="$tab" read -r s w p d; do
+        pid=$(tmux display -p -t "=$s:$w.$p" '#{pane_id}' 2>/dev/null) || continue
+        # already watching? leave it alone (a live wstat also reports "sh")
+        wstat_dir_of "$(tmux display -p -t "$pid" '#{pane_pid}')" >/dev/null && continue
+        # exec so the pane still dies with wstat, as it does at launch
+        tmux send-keys -t "$pid" "exec '$HOME/dotfiles/bin/wstat' '$d'" Enter
+    done < "$wf"
+    ;;
+revive)
+    # Relaunch the dashboard in any `diff` window that has fallen back to a
+    # shell. `restore` only knows about panes that were running wstat when the
+    # save ran, so windows already bare before this script learned to record
+    # them need this once; it is also the repair after a pane is killed by hand.
+    tmux list-panes -a -F "#{pane_id}${tab}#{window_name}${tab}#{pane_pid}${tab}#{pane_current_path}" |
+    while IFS="$tab" read -r pane win ppid path; do
+        [ "$win" = diff ] || continue
+        wstat_dir_of "$ppid" >/dev/null && continue   # already watching
+        case "$(tmux display -p -t "$pane" '#{pane_current_command}')" in
+        sh | bash | zsh | fish) : ;;
+        *) continue ;;                                 # the sidebar shares this window
+        esac
+        [ -d "$path" ] || continue
+        tmux send-keys -t "$pane" "exec '$HOME/dotfiles/bin/wstat' '$path'" Enter
+        printf 'revived %s -> %s\n' "$(tmux display -p -t "$pane" '#{session_name}')" "$path"
+    done
     ;;
 *)
-    echo "usage: $0 save|restore|tag|args PID" >&2; exit 2 ;;
+    echo "usage: $0 save|restore|revive|tag|args PID" >&2; exit 2 ;;
 esac

@@ -168,6 +168,13 @@ or `prefix Ctrl-s`); the systemd `tmux-resurrect-save` timer also auto-saves ~ev
     re-applied from the saved tmux session name because a resumed session would
     otherwise derive a fresh one — and `args_of` **must** drop `--name`, since a
     kept-but-valueless `--name` swallows `--resume` as its argument.
+  - **`diff` dashboards are restored too** (fixed 2026-09-10). tmux-resurrect
+    only restores a pane's *program* when `@resurrect-processes` is set, and it
+    is not — so every pane returns as a bare shell, and only the agents were
+    ever relaunched. `wstat` is a `sh` script, so `pane_current_command` reads
+    `sh` and cannot identify it; the save reads the pane process's argv instead.
+    **`claude-panes.sh revive`** repairs any `diff` window already sitting on a
+    shell, without waiting for a restart.
   - **Fidelity caveat:** only claude exposes a per-pane session id, so only claude
     resumes the *exact* conversation. opencode continues the newest session for
     that project dir (usually right); codex's `--last` is global, so two codex
