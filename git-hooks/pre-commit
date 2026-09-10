@@ -19,7 +19,22 @@ for e in "$AE" "$CE"; do
   fi
 done
 
-MATCHES=$(git diff --cached --diff-filter=ACM -U0 | grep -iE "^\+" | grep -v "^+++" | grep -iE "$ALL_PATTERNS" || true)
+# During a merge, every line arriving from either parent is already committed
+# and already on the remote, so scanning it as new content is a false positive
+# — main carries legitimate provider identifiers in residency code and model
+# catalogs, so this blocked every merge of main into a branch. Only a
+# line that is new against BOTH parents was actually authored here (a
+# hand-typed conflict resolution), so that is all we scan.
+if [ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]; then
+  added_vs() {
+    git diff --cached --diff-filter=ACM -U0 "$1" \
+      | grep -E "^\+" | grep -v "^+++" | sort -u
+  }
+  ADDED=$(comm -12 <(added_vs HEAD) <(added_vs MERGE_HEAD))
+else
+  ADDED=$(git diff --cached --diff-filter=ACM -U0 | grep -E "^\+" | grep -v "^+++")
+fi
+MATCHES=$(printf '%s\n' "$ADDED" | grep -iE "$ALL_PATTERNS" || true)
 if [ -n "$MATCHES" ]; then
   guard_die "Staged changes contain forbidden patterns:" "$MATCHES" \
     "If the vendor name is legitimate data, phrase it neutrally."
