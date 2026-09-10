@@ -98,6 +98,11 @@ brief, not by running inside `AgentN/`.
   agent's own window is named after it (**`Cyan`** for claude, else the agent
   name) via an explicit `-n`, so tmux won't auto-rename it. Stamps `@pm_slot <N>`
   and `@pm_agent <id>` (rename-proof; targets tmux by session-id).
+  - Claude is launched with **`--name <tmux session name>`**, so tmux, the
+    sidebar and Claude's own peer listing all call the session the same thing.
+    Without it Claude derives one (`privatemind-07`) and the three disagree,
+    which makes agent-to-agent messaging guesswork. opencode and codex have no
+    equivalent flag.
   - `--agent <id>` (`-a`) picks the agent; without it, the last-used one.
   - **Free-slot rule:** busy only while a tmux session holds it (`privatemind-a<N>`
     via `@pm_slot`, or a pane inside the slot). **48h guard:** uncommitted work
@@ -108,11 +113,20 @@ brief, not by running inside `AgentN/`.
   origin/main (clean, reusable). No prompt (`run-shell -b`).
 - **`prefix r` → `pm-agent --reset`** — kill + relaunch a fresh agent, **same
   name/slot**, repos pulled fresh off main. Generic agents restart in place.
+- **`pm-agent --rename`** — sync the display name of every *live* Claude session
+  to its tmux session name (for sessions started before `--name`, or after a
+  `rename-session`). It types `/rename` — a local slash command, no model call —
+  into each pane, and **skips** any pane that is busy or already has something
+  in its prompt box (keys sent there would append to the draft and Enter would
+  submit the mixture as that agent's next message). It reads the name back
+  afterwards rather than assuming, and reports what it skipped. The session you
+  run it *from* is always busy, so it never renames itself — run it from another
+  session, or rename this one by hand with `/rename`.
 - **`pm-agent-defs`** — the **agent registry**, sourced by the picker, the
   launcher and the resurrector so all three agree. One entry per agent gives its
   tmux window name, its launch command (each takes the slot brief as a first
-  message: claude positionally, codex positionally, opencode via `--prompt`) and
-  its resume command. Last-used agent is remembered in
+  message: claude positionally, codex positionally, opencode via `--prompt`; and
+  a display name where the agent supports one) and its resume command. Last-used agent is remembered in
   `${XDG_STATE_HOME:-~/.local/state}/pm-agent/last-agent`, written on every
   successful launch. **Add an agent here and the picker, reset and resurrection
   all pick it up.**
@@ -140,8 +154,11 @@ or `prefix Ctrl-s`); the systemd `tmux-resurrect-save` timer also auto-saves ~ev
   every agent in the registry; the filename is historical (the tmux hooks
   reference it).
   - **save** → records each agent pane's session/window/pane/path/**agent**/id/args.
-  - **restore** → relaunches per agent: `claude <args> --resume <id>`,
-    `opencode --continue`, `codex … resume --last`.
+  - **restore** → relaunches per agent: `claude <args> --name <session>
+    --resume <id>`, `opencode --continue`, `codex … resume --last`. The name is
+    re-applied from the saved tmux session name because a resumed session would
+    otherwise derive a fresh one — and `args_of` **must** drop `--name`, since a
+    kept-but-valueless `--name` swallows `--resume` as its argument.
   - **Fidelity caveat:** only claude exposes a per-pane session id, so only claude
     resumes the *exact* conversation. opencode continues the newest session for
     that project dir (usually right); codex's `--last` is global, so two codex

@@ -27,34 +27,43 @@ agent_window() {
 }
 
 # The command tmux runs to START an agent. $2 = brief file; if it exists its
-# contents become the agent's first message.
+# contents become the agent's first message. $3 = display name — claude shows it
+# in the prompt box and in peer listings (`claude --name`), so tmux, the sidebar
+# and cross-agent messaging all call a session the same thing. opencode and
+# codex have no equivalent flag and keep their own derived names.
 agent_cmd() {
-	_b="${2:-}"
+	_b="${2:-}"; _n="${3:-}"
 	[ -n "$_b" ] && [ -f "$_b" ] || _b=""
 	case "$1" in
 	claude)
-		if [ -n "$_b" ]; then printf 'claude --dangerously-skip-permissions "$(cat %s)"' "$(shq "$_b")"
-		else printf 'claude --dangerously-skip-permissions'; fi ;;
-	codex)
-		if [ -n "$_b" ]; then printf 'codex --dangerously-bypass-approvals-and-sandbox "$(cat %s)"' "$(shq "$_b")"
-		else printf 'codex --dangerously-bypass-approvals-and-sandbox'; fi ;;
-	opencode)
-		if [ -n "$_b" ]; then printf 'opencode --prompt "$(cat %s)"' "$(shq "$_b")"
-		else printf 'opencode'; fi ;;
+		_c='claude --dangerously-skip-permissions'
+		[ -n "$_n" ] && _c="$_c --name $(shq "$_n")" ;;
+	codex)    _c='codex --dangerously-bypass-approvals-and-sandbox' ;;
+	opencode) _c='opencode' ;;
 	*) return 1 ;;
 	esac
+	if [ -n "$_b" ]; then
+		case "$1" in
+		opencode) _c="$_c --prompt \"\$(cat $(shq "$_b"))\"" ;;
+		*)        _c="$_c \"\$(cat $(shq "$_b"))\"" ;;
+		esac
+	fi
+	printf '%s' "$_c"
 }
 
 # The command to RESUME an agent after a tmux restart. $2 = session id, only
 # claude has a per-pane one; opencode and codex resume their newest session
 # instead (opencode's is scoped to the project dir, codex's is global — so two
-# codex panes restored at once both land on the same conversation).
+# codex panes restored at once both land on the same conversation). $4 = display
+# name, re-applied because a resumed session would otherwise derive a fresh one.
 agent_resume_cmd() {
-	_id="${2:-}"; _args="${3:-}"
+	_id="${2:-}"; _args="${3:-}"; _n="${4:-}"
 	case "$1" in
 	claude)
 		[ -n "$_id" ] || return 1
-		printf 'claude %s --resume %s' "$_args" "$_id" ;;
+		_c="claude $_args"
+		[ -n "$_n" ] && _c="$_c --name $(shq "$_n")"
+		printf '%s --resume %s' "$_c" "$_id" ;;
 	opencode) printf 'opencode --continue' ;;
 	codex) printf 'codex --dangerously-bypass-approvals-and-sandbox resume --last' ;;
 	*) return 1 ;;
@@ -77,4 +86,16 @@ agent_remember() {
 agent_of_command() {
 	for _a in $PM_AGENTS; do [ "$1" = "$_a" ] && { printf '%s' "$_a"; return 0; }; done
 	return 1
+}
+
+# The claude PID behind a pane: tmux runs the agent directly when it has no
+# brief and via a shell when the brief has to be interpolated, so the pane pid
+# is either claude itself or claude's parent. Its session file — the sidebar's
+# and the resurrector's source of truth — is keyed by this pid.
+claude_pid_of() {  # $1 = pane pid
+	[ -n "${1:-}" ] || return 1
+	[ "$(cat "/proc/$1/comm" 2>/dev/null)" = claude ] && { printf '%s' "$1"; return 0; }
+	_c="$(pgrep -x claude -P "$1" 2>/dev/null | head -n 1)"
+	[ -n "$_c" ] || return 1
+	printf '%s' "$_c"
 }

@@ -18,6 +18,10 @@ args_of() {
         $0=="-c" || $0=="--continue" { next }
         $0=="-r" || $0=="--resume" { skip=1; next }
         /^--resume=/ { next }
+        # --name is re-applied on restore from the tmux session name; kept here
+        # it would arrive valueless and swallow --resume as its argument
+        $0=="-n" || $0=="--name" { skip=1; next }
+        /^--name=/ { next }
         # keep only flags; drop positional args (e.g. a slot bootstrap prompt),
         # which must NOT be replayed ahead of --resume on restore
         /^-/ { printf "%s%s", (n++ ? " " : ""), $0 }'
@@ -34,7 +38,7 @@ tag_panes() {
     while read -r pane ppid cmd; do
         tmux set -p -t "$pane" @pm_agent_id "$cmd"
         [ "$cmd" = claude ] || continue
-        c=$(pgrep -x claude -P "$ppid" | head -n 1); [ -n "$c" ] || continue
+        c=$(claude_pid_of "$ppid") || continue
         id=$(jq -r '.sessionId // .session_id // empty' "$HOME/.claude/sessions/$c.json" 2>/dev/null); [ -n "$id" ] || continue
         tmux set -p -t "$pane" @claude_session "$id"
         tmux set -p -t "$pane" @claude_args "$(args_of "$c")"
@@ -66,7 +70,7 @@ restore)
     # resolve every target to a pane id first: killing a pane renumbers the rest
     launch=$(while IFS="$tab" read -r s w p path agent id args; do
         pid=$(tmux display -p -t "=$s:$w.$p" '#{pane_id}' 2>/dev/null) || continue
-        printf '%s\t%s\t%s\t%s\t%s\n' "$pid" "$path" "$agent" "$id" "$args"
+        printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$pid" "$path" "$agent" "$id" "$s" "$args"
     done < "$f")
     # resurrect brings the sidebar panes back as bare shells next to the ones
     # the sidebar plugin reopens; drop them
@@ -75,12 +79,12 @@ restore)
         pid=$(tmux display -p -t "=$s:$w.$p" '#{pane_id}' 2>/dev/null) || continue
         case "$(tmux display -p -t "$pid" '#{pane_current_command}')" in *sh) tmux kill-pane -t "$pid" ;; esac
     done
-    printf '%s\n' "$launch" | while IFS="$tab" read -r pid path agent id args; do
+    printf '%s\n' "$launch" | while IFS="$tab" read -r pid path agent id sess args; do
         [ -n "$pid" ] || continue
         tmux display -p -t "$pid" '' >/dev/null 2>&1 || continue
         # already running an agent? leave it alone
         agent_of_command "$(tmux display -p -t "$pid" '#{pane_current_command}')" >/dev/null && continue
-        cmd=$(agent_resume_cmd "$agent" "$id" "$args") || continue
+        cmd=$(agent_resume_cmd "$agent" "$id" "$args" "$sess") || continue
         tmux send-keys -t "$pid" "cd '$path' && $cmd" Enter
         sleep 1
     done

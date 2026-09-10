@@ -21,6 +21,7 @@ while [ $# -gt 0 ]; do
 	--agent | -a) AGENT_ID="${2:-}"; AGENT_EXPLICIT=1; shift; [ $# -gt 0 ] && shift ;;
 	--dry-run | -n) mode=dry; shift ;;
 	--slots | -l) mode=slots; shift ;;
+	--rename) mode=rename; shift ;;   # sync live display names to their tmux session names
 	--reset | -r) mode=reset; shift   # restart a session in place (same slot/name/agent, fresh main)
 		case "${1:-}" in -* | "") : ;; *) RS="$1"; shift ;; esac ;;
 	*) TARGET="$1"; shift ;;   # a target dir: privatemind → slot flow, else agent-in-repo
@@ -43,7 +44,7 @@ say() { printf '  %s\n' "$*"; }
 # id. The session is stamped @pm_agent so --reset relaunches the same agent.
 launch_session() {  # cwd  diff_dir  sess  [slot]
 	_cwd="$1"; _dd="$2"; _sess="$3"; _slot="${4:-}"
-	_cmd="$(agent_cmd "$AGENT_ID" "$_dd/.agent-brief")"
+	_cmd="$(agent_cmd "$AGENT_ID" "$_dd/.agent-brief" "$_sess")"
 	sid="$(tmux new-session -d -P -F '#{session_id}' -s "$_sess" \
 		-n "$(agent_window "$AGENT_ID")" -c "$_cwd" "$_cmd" 2>/dev/null)"
 	[ -n "$sid" ] || { printf 'pm-agent: could not start the tmux session\n' >&2; exit 1; }
@@ -100,6 +101,55 @@ on a detached HEAD; branch off before you start, e.g.
 Acknowledge in one line which slot you're in, then wait for my task.
 EOF
 }
+
+# --rename: make every live claude session's display name match its tmux session
+# name. Told nothing, claude derives one like `privatemind-07`, so tmux, the
+# sidebar and claude's own peer listing disagree about what a session is called
+# — which makes agent-to-agent messaging guesswork. `/rename` is a local slash
+# command (no model call), typed into the pane. Busy panes are skipped: keys
+# sent mid-turn queue as that agent's next message instead of running.
+if [ "$mode" = rename ]; then
+	tmp="$(mktemp)"
+	tmux list-panes -a -F "#{pane_id}$TAB#{pane_pid}$TAB#{pane_current_command}$TAB#{session_name}" \
+		>"$tmp" 2>/dev/null
+	did=0; busy=0; draft=0; fail=0
+	while IFS="$TAB" read -r pane ppid cmd sess; do
+		[ "$cmd" = claude ] || continue
+		cpid="$(claude_pid_of "$ppid")" || continue
+		f="$HOME/.claude/sessions/$cpid.json"
+		[ -f "$f" ] || continue
+		cur="$(jq -r '.name // empty' "$f" 2>/dev/null)"
+		[ "$cur" = "$sess" ] && continue
+		case "$(jq -r '.status // empty' "$f" 2>/dev/null)" in
+		busy) say "busy   $sess (still $cur) — rerun when it's idle"; busy=$((busy + 1)); continue ;;
+		esac
+		# never type into a pane that already has something in its prompt box:
+		# the keys append to it and Enter submits the mixture as that agent's
+		# next message — and the draft sitting there may be Andrea's
+		# (an empty prompt box is padded with U+00A0, hence the octal strip)
+		if [ -n "$(tmux capture-pane -p -t "$pane" 2>/dev/null |
+			grep '^❯' | tail -n 1 | sed 's/^❯//' | tr -d '\302\240 \t')" ]; then
+			say "draft  $sess (still $cur) — clear its prompt box first"
+			draft=$((draft + 1)); continue
+		fi
+		tmux send-keys -l -t "$pane" "/rename $sess"
+		sleep 0.3
+		tmux send-keys -t "$pane" Enter
+		sleep 1
+		# read it back rather than assume: a rename that did not land is a
+		# stray message in someone's session, not a cosmetic miss
+		if [ "$(jq -r '.name // empty' "$f" 2>/dev/null)" = "$sess" ]; then
+			say "named  $cur → $sess"
+			did=$((did + 1))
+		else
+			say "FAILED $sess — check that pane"
+			fail=$((fail + 1))
+		fi
+	done <"$tmp"
+	rm -f "$tmp"
+	say "$did renamed, $busy busy, $draft with drafts, $fail failed"
+	exit 0
+fi
 
 # --reset: kill a session and relaunch a fresh one with the SAME name. A slot
 # agent keeps its slot and gets a fresh pull off main; a generic agent restarts
