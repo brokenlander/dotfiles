@@ -57,7 +57,7 @@ pushed to `brokenlander/dotfiles` and `brokenlander/agent-sidebar`.
   else — sidebar, copy, right-click paste — unchanged).
 - **`prefix g` = `bin/wdiff`** — the same drill-in as a full-screen popup you can
   invoke anywhere: fzf list (+/- per file) + live delta preview, Enter = full
-  diff, `q` back, ctrl-r refresh. Replaced lazygit. (`--watch` mode exists, unused.)
+  diff, `q` back, ctrl-r refresh. Replaced lazygit.
 
 **Why the AgentN slot and not `cld --worktree`:** privatemind is a *workspace*
 repo + **5 separate gitignored sub-repos**; one worktree can't span them. And
