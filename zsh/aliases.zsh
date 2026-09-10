@@ -1,3 +1,10 @@
+# Aliases are for humans at a prompt. A non-interactive shell — a script, cron,
+# a coding agent's tool call — must get plain coreutils: `du -sh`, `cat -A` and
+# `ls -la` there mean the POSIX flags, not dust/bat/eza's, and the mismatch
+# fails in confusing ways (dust printing its own help for `du -sh`, say).
+# Interactive shells are untouched by this.
+[[ -o interactive ]] || return
+
 # Modern CLI Tool Replacements
 # ----------------------------------------
 
