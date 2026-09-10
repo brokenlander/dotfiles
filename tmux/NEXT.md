@@ -77,14 +77,51 @@ the slot is passed in a brief, not by running inside `AgentN/`.
   **`brokenlander <94259413+brokenlander@users.noreply.github.com>`** (the noreply
   — gmail leaks the real name on a public repo).
 
+## Done 2026-09-10
+
+Reference for all of it is `tmux-agent.md`; this is just the list.
+
+- **Sessions are named.** `claude --name` at launch from the tmux session name,
+  re-applied on resume, and `pm-agent --rename` to fix up ones that predate it.
+  Peers, tmux and the sidebar finally agree what a session is called.
+- **`pm-agent --prune`.** Reclaims ad-hoc worktrees, stale free slots and local
+  branches already merged into origin/main (163 of them were sitting there).
+  Prints a plan; `--yes` applies it.
+- **Orphaned slots.** A dead agent left its session standing and the slot
+  claimed forever. `--slots` reports it, `--prune` ends it. Inferred, not
+  hooked — a crash or a kill fires no SessionEnd.
+- **The diff dashboards come back.** tmux-resurrect only restores a pane's
+  program when `@resurrect-processes` is set, which it never was, so seven of
+  nine `diff` windows were bare shells. `claude-panes.sh` restores them now and
+  `revive` repairs live ones. Saved lists also expire (7 days) instead of piling
+  up — 136 had accumulated in six days.
+- **Amber means something.** Claude never reports a `waiting` status, so the
+  sidebar's "needs you" state was dead. Idle past
+  `@agent_sidebar_idle_wait` (10 min) now promotes to it.
+- **`pm-roster`** — the phonebook: who is live, where, doing what, and the name
+  a peer addresses. `--what` adds each agent's last line read off its
+  transcript, which costs nothing. Both are cross-provider; `pm-lastsaid` holds
+  one adapter per format.
+- **Deleted** `wdiff --watch` (no caller — it served the rejected fzf-diff-window
+  idea).
+
 ## Work left
 
 1. **102 older `~/dotfiles` commits still `Andrea Moccia <gmail>`** — offered a
    full-history scrub to `brokenlander` (backup ref + verify tree identical +
    force-push). **Awaiting explicit "go"** — do NOT run off a casual reply.
-2. **`pm-agent --prune`** — reset stale/merged slots back to main on demand (slots
-   still mint new N rather than recycle branch-holding ones).
-3. **Review remaining keys** you dislike; remap as they come up.
+2. **`pm-agent --prune --yes` has never been run on the real estate.** The plan
+   is 163 merged branches and 5 stray worktrees; that is Andrea's call, not an
+   automatic one.
+3. **A codex producer** for the sidebar — opencode's is installed and verified,
+   codex has none, so a codex agent shows no state. Blocked behind codex being
+   usable at all: it dropped `wire_api = "chat"` and the gateway 404s on
+   `/v1/responses`.
+4. **Cross-provider messaging is not possible** and probably should not be
+   attempted. The transport is Claude's own UDS socket; the other two neither
+   listen on it nor speak it. Reading state and transcripts already works for
+   all three, and that is the half that costs nothing.
+5. **Review remaining keys** you dislike; remap as they come up.
 
 ## Gotchas for whoever picks this up
 
