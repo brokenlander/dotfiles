@@ -15,7 +15,7 @@
 set -u
 . "$HOME/dotfiles/bin/pm-agent-defs"
 
-mode=run; TARGET=""; RS=""; AGENT_ID=""; AGENT_EXPLICIT=0; YES=0
+mode=run; TARGET=""; RS=""; AGENT_ID=""; AGENT_EXPLICIT=0; YES=0; FRESH=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--agent | -a) AGENT_ID="${2:-}"; AGENT_EXPLICIT=1; shift; [ $# -gt 0 ] && shift ;;
@@ -24,6 +24,7 @@ while [ $# -gt 0 ]; do
 	--rename) mode=rename; shift ;;   # sync live display names to their tmux session names
 	--prune) mode=prune; shift ;;     # reclaim stale worktrees, slots and merged branches
 	--yes | -y) YES=1; shift ;;       # let --prune actually apply its plan
+	--fresh) FRESH=1; shift ;;        # --reset: start a NEW conversation, don't resume
 	--reset | -r) mode=reset; shift   # restart a session in place (same slot/name/agent, fresh main)
 		case "${1:-}" in -* | "") : ;; *) RS="$1"; shift ;; esac ;;
 	*) TARGET="$1"; shift ;;   # a target dir: privatemind → slot flow, else agent-in-repo
@@ -46,9 +47,9 @@ say() { printf '  %s\n' "$*"; }
 # Shared launcher: an $AGENT_ID session at $cwd (reads $diff_dir/.agent-brief as
 # its first message if present), a diff window watching $diff_dir, targeted by
 # id. The session is stamped @pm_agent so --reset relaunches the same agent.
-launch_session() {  # cwd  diff_dir  sess  [slot]
-	_cwd="$1"; _dd="$2"; _sess="$3"; _slot="${4:-}"
-	_cmd="$(agent_cmd "$AGENT_ID" "$_dd/.agent-brief" "$_sess")"
+launch_session() {  # cwd  diff_dir  sess  [slot]  [cmd]
+	_cwd="$1"; _dd="$2"; _sess="$3"; _slot="${4:-}"; _cmd="${5:-}"
+	[ -n "$_cmd" ] || _cmd="$(agent_cmd "$AGENT_ID" "$_dd/.agent-brief" "$_sess")"
 	sid="$(tmux new-session -d -P -F '#{session_id}' -s "$_sess" \
 		-n "$(agent_window "$AGENT_ID")" -c "$_cwd" "$_cmd" 2>/dev/null)"
 	[ -n "$sid" ] || { printf 'pm-agent: could not start the tmux session\n' >&2; exit 1; }
@@ -57,8 +58,36 @@ launch_session() {  # cwd  diff_dir  sess  [slot]
 	[ -n "$_slot" ] && tmux set-option -t "$sid" @pm_slot "$_slot"
 	tmux new-window -d -t "$sid" -n diff -c "$_dd" "$HOME/dotfiles/bin/wstat '$_dd'"
 	say "launched session $_sess ($AGENT_ID + diff window)"
-	if [ -n "${TMUX:-}" ]; then tmux switch-client -t "$sid"
-	else tmux attach -t "$sid"; fi
+	# Bring a client to the new session: the one that was watching the session
+	# --reset replaced, else the caller's own. `attach` needs a terminal, so a
+	# restart fired detached from the pane it is replacing must not try it —
+	# that pane is gone by then, and its client has already been moved.
+	if [ -n "${PM_CLIENT:-}" ]; then tmux switch-client -c "$PM_CLIENT" -t "$sid" 2>/dev/null
+	elif [ -n "${TMUX:-}" ]; then tmux switch-client -t "$sid"
+	elif [ -t 1 ]; then tmux attach -t "$sid"
+	fi
+}
+
+# The command that brings a session's CONVERSATION back, or nothing if there
+# isn't one to resume. Ground truth is the live agent process, not the pane's
+# @claude_session tag — that goes stale on resume and compact, which is why
+# tmux/claude-panes.sh refreshes it from the process too. Must be called BEFORE
+# the session is killed.
+session_resume_cmd() {  # $1 = session name -> resume command, or nothing
+	_sn="$1"
+	tmux list-panes -s -t "$_sn" -F "#{pane_pid}$TAB#{pane_current_command}" 2>/dev/null |
+		while IFS="$TAB" read -r _pp _pc; do
+			_a="$(agent_of_command "$_pc")" || continue
+			_ap="$(agent_pid_of "$_pp" "$_a")" || continue
+			_id=""; _ar=""
+			if [ "$_a" = claude ]; then
+				_id="$(jq -r '.sessionId // .session_id // empty' \
+					"$HOME/.claude/sessions/$_ap.json" 2>/dev/null)"
+				[ -n "$_id" ] || continue
+				_ar="$("$HOME/dotfiles/tmux/claude-panes.sh" args "$_ap")"
+			fi
+			agent_resume_cmd "$_a" "$_id" "$_ar" "$_sn" && break
+		done
 }
 
 # Unique session name from a base (append -2, -3, … on collision).
@@ -155,30 +184,43 @@ if [ "$mode" = rename ]; then
 	exit 0
 fi
 
-# --reset: kill a session and relaunch a fresh one with the SAME name. A slot
-# agent keeps its slot and gets a fresh pull off main; a generic agent restarts
-# in its own repo (no destructive reset).
+# --reset: kill a session and relaunch it with the SAME name. What happens to
+# the CONVERSATION follows from what happened to the tree, rather than being a
+# separate choice:
+#   slot agent    → the five worktrees are reset to origin/main under it, so a
+#                   resumed conversation would believe in work that no longer
+#                   exists. Fresh conversation, always.
+#   generic agent → nothing is wiped (its repo is untouched), so the process
+#                   restarts and the conversation is resumed. `--fresh` opts out.
+# Only claude can resume an exact conversation; opencode continues the newest
+# session for the dir and codex's `resume --last` is global (pm-agent-defs).
 if [ "$mode" = reset ]; then
 	rs="$RS"; [ -n "$rs" ] || rs="$(tmux display-message -p '#{session_name}' 2>/dev/null)"
 	[ -n "$rs" ] || { printf 'pm-agent: no session to reset\n' >&2; exit 1; }
 	ragent="$(tmux show-options -t "$rs" -v -q @pm_agent 2>/dev/null)"
 	[ "$AGENT_EXPLICIT" = 1 ] || { agent_valid "$ragent" && AGENT_ID="$ragent"; }
 	rslot="$(tmux show-options -t "$rs" -v -q @pm_slot 2>/dev/null)"
+	# Whoever is watching the session being replaced follows it to the new one.
+	PM_CLIENT="$(tmux list-clients -t "$rs" -F '#{client_name}' 2>/dev/null | head -n 1)"
+	export PM_CLIENT
 	if [ -n "$rslot" ] && [ -d "$WS/Agent$rslot" ]; then
 		dir="$WS/Agent$rslot"
-		say "resetting $rs (Agent$rslot) → fresh main…"
+		say "resetting $rs (Agent$rslot) → fresh main, fresh conversation…"
 		tmux kill-session -t "$rs" 2>/dev/null
 		prep_slot "$rslot"
 		write_brief "$rslot" "$dir"
 		launch_session "$WS" "$dir" "$rs" "$rslot"
 	else
-		cwd="$(tmux list-panes -t "$rs" -F '#{pane_current_command} #{pane_current_path}' 2>/dev/null |
+		cwd="$(tmux list-panes -s -t "$rs" -F '#{pane_current_command} #{pane_current_path}' 2>/dev/null |
 			awk -v ags="$PM_AGENTS" 'BEGIN{n=split(ags,a," ")}
 				{for(i=1;i<=n;i++) if($1==a[i]) {print $2; exit}}')"
 		[ -n "$cwd" ] || cwd="$HOME"
-		say "restarting $rs in $cwd…"
+		rcmd=""
+		[ "$FRESH" = 1 ] || rcmd="$(session_resume_cmd "$rs")"
+		if [ -n "$rcmd" ]; then say "restarting $rs in $cwd, same conversation…"
+		else say "restarting $rs in $cwd, fresh conversation…"; fi
 		tmux kill-session -t "$rs" 2>/dev/null
-		launch_session "$cwd" "$cwd" "$rs"
+		launch_session "$cwd" "$cwd" "$rs" "" "$rcmd"
 	fi
 	exit 0
 fi
