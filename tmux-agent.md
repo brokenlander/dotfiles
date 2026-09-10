@@ -278,9 +278,18 @@ honest). This is the identity layer — in-conversation it's already "Cyan," not
   it's the **`error`** token (pulled from the bundle's mode→color map), matched to
   the `← N agent` counter grey. Cost: error text shares the tone. It **cannot be
   hidden** while in bypass mode — only leaving bypass (shift+tab) removes it.
-- **102 older `~/dotfiles` commits still `Andrea Moccia <gmail>`** — a full-history
-  scrub to brokenlander is offered but **needs an explicit go** (rewrites every
-  hash + force-push; back up a ref first).
+- **History identity — DONE 2026-09-10.** All 161 commits on both branches are
+  `brokenlander <94259413+…>`; the 102 that carried a personal address were
+  rewritten with `git filter-repo --mailmap` in a throwaway clone, verified
+  content-identical (every tree hash, author date and subject unchanged), then
+  force-pushed with a lease. Committer `GitHub <noreply@github.com>` on 31
+  web-UI merges was deliberately left alone — it is not a personal identity.
+  Cost: those 31 lose their "Verified" badge, since a rewrite drops signatures.
+  Pre-scrub history is kept locally on the `backup/pre-identity-scrub-20260910-*`
+  tags. **The repo still names him in `git/.gitconfig` (`name = Andrea Moccia`)
+  and in this file** — file contents were not in scope; `.gitconfig` is his real
+  git identity for every other repo on the box, so changing it is a live
+  decision, not cleanup.
 - **memories / personality** — further Cyan customization to explore.
 - `PM_WS` / `PM_REPOS` override the workspace and its sub-repo list, so the
   destructive paths can be exercised against a throwaway checkout.

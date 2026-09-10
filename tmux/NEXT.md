@@ -118,23 +118,35 @@ Reference for all of it is `tmux-agent.md`; this is just the list.
   session, so a restart fired detached from its own pane still lands the viewer
   in the new one.
 
+## Done 2026-09-10, later
+
+- **The history scrub ran.** All 161 commits are `brokenlander` on both
+  branches. `git filter-repo --mailmap` in a throwaway clone, verified
+  content-identical (every tree hash, author date, committer date and subject
+  byte-for-byte the same; `main^{tree}` unchanged), then force-pushed with a
+  lease and re-verified from a *fresh* clone. Backups on the local
+  `backup/pre-identity-scrub-20260910-*` tags. Two things worth knowing: the
+  side branch `kubuntu-2604-refresh` had to be rewritten too — it reached 23 of
+  the old commits, so pushing only `main` would have left them public — and the
+  31 GitHub web-UI merges lose their "Verified" badge, because a rewrite drops
+  signatures.
+- **`--prune --yes` ran.** The plan was nothing like the 163 branches recorded
+  here: **4 orphaned worktrees in Agent4 and zero branches**, all clean, pushed
+  and unheld. Their feature branches survived, and Agent4 is FREE again. Whoever
+  writes a number into a handoff should expect it to rot — regenerate the plan,
+  do not quote the doc.
+
 ## Work left
 
-1. **102 older `~/dotfiles` commits still `Andrea Moccia <gmail>`** — offered a
-   full-history scrub to `brokenlander` (backup ref + verify tree identical +
-   force-push). **Awaiting explicit "go"** — do NOT run off a casual reply.
-2. **`pm-agent --prune --yes` has never been run on the real estate.** The plan
-   is 163 merged branches and 5 stray worktrees; that is Andrea's call, not an
-   automatic one.
-3. **A codex producer** for the sidebar — opencode's is installed and verified,
+1. **A codex producer** for the sidebar — opencode's is installed and verified,
    codex has none, so a codex agent shows no state. Blocked behind codex being
    usable at all: it dropped `wire_api = "chat"` and the gateway 404s on
    `/v1/responses`.
-4. **Cross-provider messaging is not possible** and probably should not be
+2. **Cross-provider messaging is not possible** and probably should not be
    attempted. The transport is Claude's own UDS socket; the other two neither
    listen on it nor speak it. Reading state and transcripts already works for
    all three, and that is the half that costs nothing.
-5. **Review remaining keys** you dislike; remap as they come up.
+3. **Review remaining keys** you dislike; remap as they come up.
 
 ## Gotchas for whoever picks this up
 
