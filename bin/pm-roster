@@ -9,8 +9,48 @@
 # the slot's worktrees say which repos are in play.
 set -u
 . "$HOME/dotfiles/bin/pm-agent-defs"
+
+WHAT=0
+[ "${1:-}" = "--what" ] || [ "${1:-}" = "-w" ] && WHAT=1
 WS="${PM_WS:-$HOME/forge/privatemind}"
 TAB="$(printf '\t')"
+
+# The last thing an agent SAID, read off its transcript. Free: no message, no
+# turn, nothing rendered in its pane — every session streams its conversation to
+# disk, so anything already answered is already there. Only a genuinely new
+# question has to cost a turn, because the answer has to be thought first.
+#
+# Local-only by construction: a transcript holds everything that agent saw, which
+# is exactly why they are never synced anywhere.
+last_said() {  # $1 = claude pid
+	_sj="$HOME/.claude/sessions/$1.json"
+	[ -f "$_sj" ] || return 1
+	_id="$(jq -r '.sessionId // empty' "$_sj" 2>/dev/null)"
+	[ -n "$_id" ] || return 1
+	_t=""
+	for _d in "$HOME"/.claude/projects/*/; do
+		[ -f "$_d$_id.jsonl" ] && { _t="$_d$_id.jsonl"; break; }
+	done
+	[ -n "$_t" ] || return 1
+	# only the tail: these run to megabytes and we want one line from the end
+	tail -c 400000 "$_t" 2>/dev/null | python3 -c '
+import json, sys
+last = ""
+for line in sys.stdin:
+    try:
+        o = json.loads(line)
+    except Exception:
+        continue
+    if o.get("type") != "assistant":
+        continue
+    c = o.get("message", {}).get("content", [])
+    t = " ".join(b.get("text", "") for b in c
+                 if isinstance(b, dict) and b.get("type") == "text").strip()
+    if t:
+        last = t
+print(" ".join(last.split())[:2000])
+' 2>/dev/null
+}
 
 # session -> slot / stamped agent, for the sessions that have one
 opts="$(mktemp)"; trap 'rm -f "$opts" "$panes"' EXIT
@@ -57,6 +97,10 @@ while IFS="$TAB" read -r sess ppid cmd; do
 	fi
 
 	printf '  %-22.22s %-28.28s %s\n' "$sess" "$where" "$state"
+	if [ "$WHAT" = 1 ] && [ "$cmd" = claude ] && [ -n "${cpid:-}" ]; then
+		said="$(last_said "$cpid")"
+		[ -n "$said" ] && printf '      %.*s\n' "$((${COLUMNS:-120} - 10))" "$said"
+	fi
 done <"$panes"
 
 printf '\n  message one: ListAgents for the live list, then SendMessage to its name.\n'

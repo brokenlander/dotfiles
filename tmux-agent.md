@@ -171,6 +171,12 @@ brief, not by running inside `AgentN/`.
   find each other without being told. **Sparingly** — a message costs the
   recipient a whole turn, and a one-line question has triggered a 90-second
   investigation.
+  - **`--what` (`-w`)** appends each agent's last line, read from its transcript
+    on disk. Free: nothing sent, no turn, nothing rendered in its pane. Most of
+    what you would ask is already answered there — both blockers found by
+    messaging on 2026-09-10 were already written down. **Ask only what has not
+    been thought yet**; that is the only thing that has to cost a turn.
+    Claude-only for now (see the cross-provider note in §4).
 
 ---
 
