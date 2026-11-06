@@ -19,12 +19,15 @@ echo "This script installs hardware-specific drivers and tools."
 echo ""
 
 # ========== NVIDIA Driver ==========
+# Installs the latest open-kernel-module driver. The apt/cuda-pin sources this
+# from NVIDIA's CUDA repo, so the unversioned "nvidia-driver-open" metapackage
+# tracks the newest branch available (currently 620 for the RTX 5090 / GB202).
 echo "=== NVIDIA Driver ==="
-if dpkg -l nvidia-driver-590-open 2>/dev/null | command grep -q "^ii"; then
-    echo "NVIDIA driver 590 already installed, skipping..."
+if dpkg -l nvidia-driver-open 2>/dev/null | command grep -q "^ii"; then
+    echo "NVIDIA open driver already installed, skipping..."
 else
     sudo apt-get update
-    sudo apt-get install -y nvidia-driver-590-open
+    sudo apt-get install -y nvidia-driver-open
     echo -e "${YELLOW}NVIDIA driver installed. Reboot required.${NC}"
 
     # Secure Boot: enroll MOK key
@@ -61,6 +64,18 @@ done
 qdbus6 org.kde.ksmserver /KSMServer org.kde.KSMServerInterface.reloadConfig 2>/dev/null || true
 qdbus6 org.kde.Solid.PowerManagement /org/kde/Solid/PowerManagement refreshStatus 2>/dev/null || true
 echo -e "${GREEN}Screen autolock disabled.${NC}"
+
+# ========== Disable KDE Wallet ==========
+# No wallet nag on login or for network secrets — nothing on this box relies
+# on kwallet, and the prompts are pure friction. NOTE: gh stores its token in
+# the keyring, so git uses the `store` credential helper here instead (see the
+# reauth note in README) — don't re-enable kwallet expecting gh to find it.
+echo "=== Disabling KDE Wallet ==="
+kwriteconfig6 --file kwalletrc --group Wallet --key Enabled --type bool false
+kwriteconfig6 --file kwalletrc --group Wallet --key "First Use" --type bool false
+# Kill any running daemon so the change takes effect without a logout.
+killall -q kwalletd6 kwalletd5 kwalletd 2>/dev/null || true
+echo -e "${GREEN}KDE Wallet disabled.${NC}"
 
 # ========== OpenLinkHub (Corsair cooling) ==========
 echo "=== OpenLinkHub ==="

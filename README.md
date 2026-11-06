@@ -31,7 +31,7 @@ This installs and configures everything portable: CLI tools, ZSH, Neovim, Tmux, 
 ```
 
 Hardware-specific setup for the primary rig:
-- NVIDIA driver 590 (RTX 5090) + Secure Boot MOK enrollment
+- NVIDIA open driver, latest branch (RTX 5090) + Secure Boot MOK enrollment
 - Display: 1440p @ 120Hz, 1.5x scale
 - Disable sleep/suspend (always-on)
 - OpenLinkHub (Corsair iCUE alternative)
@@ -42,6 +42,13 @@ Hardware-specific setup for the primary rig:
 Voice services (ASR/TTS) are managed separately — see `~/forge/voice/README.md`.
 
 ### 4. Post-install (manual)
+
+> **Tokens expired later?** If `git push` hangs or OneDrive throws
+> `AADSTS70000`, it's a dead OAuth token, not a broken config. Run
+> `./scripts/reauth.sh` — it refreshes gh and/or OneDrive and pushes any
+> waiting dotfiles commits. Note: KDE Wallet is disabled on this box, so gh
+> can't keep its token in the keyring — git uses the `store` helper
+> (`~/.git-credentials`, chmod 600) instead.
 
 ```bash
 # GitHub CLI
@@ -125,7 +132,7 @@ first sync appear to hang. Two lessons:
 
 | Component | What |
 |-----------|------|
-| GPU | NVIDIA RTX 5090 (driver 590-open, CUDA 13.1) |
+| GPU | NVIDIA RTX 5090 (driver open, latest — currently 620, CUDA 13.1) |
 | Mic | Elgato Wave 3 (WirePlumber always-process fix) |
 | Camera | Logitech UVC webcam (cameractrls GUI for settings) |
 | Keyboard | ZSA Voyager (Keymapp + udev rules) |
