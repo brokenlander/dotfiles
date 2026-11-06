@@ -127,6 +127,7 @@ first sync appear to hang. Two lessons:
 | Haruna | Video player |
 | KeePassXC | Password manager |
 | Spotify | Music |
+| FreeRDP 3.33 (SDL3 client) | RDP, built from source with H.264 into `/opt/freerdp` by `scripts/build-freerdp.sh`. Ubuntu's FreeRDP has no H.264 and its X11/Wayland clients are legacy/deprecated; don't install Ubuntu's `freerdp-*` client packages. Bump `FREERDP_VERSION` to upgrade. |
 
 ### Workstation (this machine)
 
@@ -157,6 +158,7 @@ dotfiles/
 ├── mangohud/       # Game overlay config
 └── scripts/
     ├── install-dependencies.sh  # Server + Desktop packages
+    ├── build-freerdp.sh         # FreeRDP 3 from source with H.264, SDL3 client (desktop; called by install-dependencies)
     ├── install.sh               # Symlinks + configs
     ├── workstation.sh           # Hardware-specific setup
     ├── sync-zen-settings.sh     # Zen Browser Windows sync
