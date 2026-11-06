@@ -51,6 +51,12 @@ if [ "$HAS_DISPLAY" = true ]; then
     echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections
     sudo apt-get install -y kitty keepassxc haruna ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio xdotool librsvg2-bin
 
+    # RDP + Teams AV client (brokenlander/teams-av-setup): FreeRDP's SDL3 client
+    # (its X11 and Wayland clients are deprecated), Opus for pmclient, GStreamer
+    # with x264enc for the webcam stream.
+    echo "=== Installing RDP / Teams AV client packages ==="
+    sudo apt-get install -y freerdp-sdl libopus0 v4l-utils gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
+
     # Zen Browser
     echo "=== Installing Zen Browser ==="
     if command -v zen-browser &> /dev/null || [ -d "$HOME/.tarball-installations/zen" ]; then
