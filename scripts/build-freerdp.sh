@@ -33,7 +33,8 @@ installed_ok() {
     local bin="$PREFIX/bin/sdl-freerdp"
     [ -x "$bin" ] || return 1
     "$bin" /version 2>/dev/null | grep -q "version $FREERDP_VERSION " || return 1
-    "$bin" /buildconfig 2>/dev/null | grep -qE 'WITH_FFMPEG=ON'
+    local cfg; cfg=$("$bin" /buildconfig 2>/dev/null)
+    grep -q 'WITH_GFX_H264=ON' <<<"$cfg" && grep -q 'WITH_VERBOSE_WINPR_ASSERT=OFF' <<<"$cfg"
 }
 
 if [ "${FORCE:-0}" != 1 ] && installed_ok; then
@@ -70,6 +71,7 @@ cmake -S "$SRC" -B "$SRC/build" -G Ninja \
     -DWITH_OPENH264=OFF -DWITH_VAAPI=OFF \
     -DWITH_PULSE=ON -DWITH_OPUS=ON \
     -DWITH_WEBVIEW=OFF -DWITH_FUSE=OFF -DWITH_CUPS=OFF -DWITH_PCSC=OFF \
+    -DWITH_VERBOSE_WINPR_ASSERT=OFF \
     -DWITH_MANPAGES=OFF -DBUILD_TESTING=OFF -DWITH_KRB5=ON
 
 cmake --build "$SRC/build"
