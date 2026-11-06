@@ -11,16 +11,13 @@
 # ========== CREDENTIAL HELPERS ==========
 # This section configures how Git authenticates with remote repositories
 [credential "https://github.com"]
-    # Uses the GitHub CLI for authentication - very convenient!
-    # This allows you to use 'gh auth login' to authenticate once
-    # and have Git operations work seamlessly thereafter.
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
-	username = andrea-moccia_options
-    
-    # Alternative credential helper (commented out)
-    # Uncomment to store credentials persistently (less secure but convenient)
-    # helper = store
+    # KDE Wallet is disabled on this box (see scripts/workstation.sh), so the
+    # gh credential helper can't read its token from the keyring and HANGS
+    # every git operation. Use the plaintext store helper instead:
+    # ~/.git-credentials (chmod 600), populated by scripts/reauth.sh.
+	helper =
+	helper = store
+    # (Previous: helper = !/usr/bin/gh auth git-credential — needs a keyring.)
 
 # ========== STANDARD CONFIGURATION ==========
 [core]
@@ -167,5 +164,5 @@
     # List open issues
     issues = "!gh issue list"
 [credential "https://gist.github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
+	helper =
+	helper = store
