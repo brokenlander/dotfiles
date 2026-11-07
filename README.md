@@ -140,6 +140,33 @@ first sync appear to hang. Two lessons:
 | Cooling | Corsair (OpenLinkHub) |
 | Gaming | Steam, MangoHud, Gamemode, ProtonUp-Qt |
 
+## Zen settings sync (multi-machine)
+
+Keeps a Zen setup consistent across machines, in two layers:
+
+- **Layer 1 — Firefox Sync** (your Mozilla account): favorites, spaces, folders,
+  pinned tabs, bookmarks/history/passwords, **and** the appearance/behavior prefs
+  opted in by `zen/user.js`. Sign each machine into the same account — no copying.
+- **Layer 2 — `scripts/zen-sync.sh`**: the bits Firefox Sync can't carry —
+  keyboard shortcuts (`customKeys.json`) and mods (`zen-themes.json` + the mod
+  folders). Mirrored in `zen/profile/` and moved with git.
+
+```bash
+# After changing shortcuts/mods on one machine (close Zen first):
+./scripts/zen-sync.sh push && git add -A zen/ && git commit -m "zen: sync settings" && git push
+# On another machine:
+git pull && ./scripts/zen-sync.sh pull   # also deploys zen/user.js
+```
+
+`zen-sync.sh` finds the active profile automatically via `profiles.ini`, so the
+random profile name doesn't matter. `user.js` is deployed as a managed block and
+sets only *sync sentinels*, never pref values — the values ride Firefox Sync.
+
+> Migrating from the old Windows-partition `sync-zen-settings.sh`: delete any
+> pinned `user_pref("zen.…")` **values** left in your profile's `user.js` (e.g.
+> `zen.workspaces.active`, build-ids) — a pinned value overrides what Firefox
+> Sync sends, and some of that old dump is machine-specific.
+
 ## Structure
 
 ```
