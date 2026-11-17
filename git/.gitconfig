@@ -166,3 +166,8 @@
 [credential "https://gist.github.com"]
 	helper =
 	helper = store
+
+# Settings for this machine only live in ~/.gitconfig.local, which is not in
+# the repo. It is read last, so what it sets wins.
+[include]
+	path = ~/.gitconfig.local
