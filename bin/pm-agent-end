@@ -1,25 +1,24 @@
 #!/usr/bin/env sh
-# pm-agent-end [session] — end an agent: kill its tmux session and, if it holds a
-# PrivateMind AgentN slot, reset that slot's sub-repos to origin/main (clean,
-# reusable). No prompt. Committed branches survive (reset only detaches, the ref
-# stays); uncommitted/untracked work in the slot is discarded. A generic agent
-# (no slot) is just ended — its repo is never touched.
+# pm-agent-end [SESSION]: end an agent's session with no prompt and put its
+# slot, if it holds one, back to origin/main. Uncommitted work in the slot is
+# discarded; branches stay.
 set -u
-WS="$HOME/forge/privatemind"; REPOS="app gateway app-db gateway-db helm"
+. "$HOME/dotfiles/bin/pm-agent-defs"
+WS="${PM_WS:-$HOME/forge/privatemind}"
+REPOS="${PM_REPOS:-app gateway app-db gateway-db helm}"
 
-sess="${1:-}"
-[ -n "$sess" ] || sess="$(tmux display-message -p '#{session_name}' 2>/dev/null)"
-[ -n "$sess" ] || exit 0
+sid="$(sess_id "${1:-$(tmux display-message -p '#{session_id}' 2>/dev/null)}")"
+[ -n "$sid" ] || exit 0
+name="$(tmux display-message -p -t "$sid" '#{session_name}' 2>/dev/null)"
+slot="$(tmux show-options -t "$sid" -v -q @pm_slot 2>/dev/null)"
+"$HOME/dotfiles/bin/pm-board" done --as "$name" >/dev/null 2>&1
+tmux kill-session -t "$sid" 2>/dev/null
 
-slot="$(tmux show-options -t "$sess" -v -q @pm_slot 2>/dev/null)"
-tmux kill-session -t "$sess" 2>/dev/null   # end the session first — feels instant
-
-# Then clean its slot (if any) back to origin/main.
-[ -n "$slot" ] && [ -d "$WS/Agent$slot" ] || exit 0
 dir="$WS/Agent$slot"
+[ -n "$slot" ] && [ -d "$dir" ] || exit 0
 for r in $REPOS; do
 	wt="$dir/$r"; [ -d "$wt" ] || continue
-	git -C "$wt" checkout -q --detach 2>/dev/null   # freeze the branch ref
+	git -C "$wt" checkout -q --detach 2>/dev/null
 	git -C "$wt" reset -q --hard origin/main 2>/dev/null
 	git -C "$wt" clean -qfd 2>/dev/null
 done

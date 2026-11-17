@@ -1,23 +1,11 @@
 #!/usr/bin/env python3
-"""pm-lastsaid AGENT PID CWD — the last thing an agent said, read off disk.
+"""pm-lastsaid AGENT PID [CWD]: the last thing an agent said, read from its transcript.
 
-Free by construction: every agent streams its conversation somewhere local, so
-anything already answered is already written down. Nothing is sent, no turn is
-spent, and nothing renders in the agent's pane. Only a question whose answer
-does not exist yet has to cost a turn.
+  claude    ~/.claude/projects/<slug>/<sessionId>.jsonl
+  codex     ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl
+  opencode  ~/.local/share/opencode/opencode.db
 
-One adapter per provider, because each keeps its transcript in its own shape:
-
-  claude    ~/.claude/projects/<slug>/<sessionId>.jsonl   (JSONL)
-  codex     ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl  (JSONL)
-  opencode  ~/.local/share/opencode/opencode.db           (SQLite)
-
-Only claude ties a transcript to a pid. For the other two the newest session
-for that working directory is the best available match — the same fidelity
-caveat that already applies to resuming them after a tmux restart.
-
-Local-only: a transcript holds everything that agent saw, which is why they are
-never synced anywhere.
+Only claude ties a transcript to a pid; the other two give the newest session for CWD.
 """
 import json
 import os
@@ -25,7 +13,7 @@ import sys
 from pathlib import Path
 
 HOME = Path(os.environ.get("HOME", "~")).expanduser()
-TAIL = 400_000  # these run to megabytes; one line from the end is all we want
+TAIL = 400_000
 
 
 def _clean(text):
@@ -96,7 +84,6 @@ def codex(pid, cwd):
         except ValueError:
             continue
         payload = obj.get("payload") or {}
-        # codex hands us the answer directly on task_complete
         if payload.get("type") == "task_complete" and payload.get("last_agent_message"):
             last = payload["last_agent_message"]
         elif payload.get("type") == "message" and payload.get("role") == "assistant":
@@ -129,8 +116,7 @@ def opencode(pid, cwd):
         if row is None:
             return ""
         sid, title = row
-        # parts carry no role of their own — the message they belong to does,
-        # so without the join the newest text part is usually the user's
+        # a part has no role of its own, the message it belongs to does
         for part_data, msg_data in con.execute(
             "SELECT p.data, m.data FROM part p JOIN message m ON m.id = p.message_id "
             "WHERE p.session_id = ? ORDER BY p.time_created DESC LIMIT 60",
@@ -144,7 +130,6 @@ def opencode(pid, cwd):
                 continue
             if part.get("type") == "text" and part.get("text"):
                 return _clean(part["text"])
-        # nothing said yet: its own summary of the session is the next best thing
         return _clean(title or "")
 
 
@@ -162,7 +147,7 @@ def main():
     try:
         said = fn(pid, cwd)
     except Exception:
-        return  # a roster row is never worth an exception
+        return
     if said:
         print(_clean(said)[:2000])
 

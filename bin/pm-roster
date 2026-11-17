@@ -1,75 +1,53 @@
 #!/usr/bin/env sh
-# pm-roster — who is running, where, and what they are touching.
-#
-# The address book for agent-to-agent messaging: every row's first column is
-# the name a peer addresses (`SendMessage` to it, after `ListAgents`). Meant to
-# be read, not watched — one line each, and a peer is worth interrupting rarely.
-#
-# The "what" is mostly free: the tmux session name is already the topic, and
-# the slot's worktrees say which repos are in play.
+# pm-roster [-w]: one line per live agent: the name a peer addresses it by,
+# where it works (its slot and the worktrees on a branch there) and its state.
+#   -w, --what   add the last thing each agent said, read from its transcript
 set -u
 . "$HOME/dotfiles/bin/pm-agent-defs"
 
 WHAT=0
-[ "${1:-}" = "--what" ] || [ "${1:-}" = "-w" ] && WHAT=1
+case "${1:-}" in --what | -w) WHAT=1 ;; esac
 WS="${PM_WS:-$HOME/forge/privatemind}"
-TAB="$(printf '\t')"
 
-# session -> slot / stamped agent, for the sessions that have one
-opts="$(mktemp)"; trap 'rm -f "$opts" "$panes"' EXIT
-tmux list-sessions -F "#{session_name}$TAB#{@pm_slot}$TAB#{@pm_agent}" 2>/dev/null >"$opts"
-
-# one row per session that still has a live agent in it
-panes="$(mktemp)"
-tmux list-panes -a -F "#{session_name}$TAB#{pane_pid}$TAB#{pane_current_command}$TAB#{pane_id}" 2>/dev/null |
+panes="$(tmux list-panes -a -F "#{session_name}$TAB#{pane_pid}$TAB#{pane_current_command}$TAB#{pane_current_path}$TAB#{@pm_slot}" 2>/dev/null |
 	awk -F"$TAB" -v ags="$PM_AGENTS" 'BEGIN{n=split(ags,a," ")}
-		{for(i=1;i<=n;i++) if($3==a[i] && !seen[$1]++) {print; next}}' >"$panes"
-
-[ -s "$panes" ] || { printf '  no agents running\n'; exit 0; }
+		{for(i=1;i<=n;i++) if($3==a[i] && !seen[$1]++) {print; next}}')"
+[ -n "$panes" ] || { printf '  no agents running\n'; exit 0; }
 
 printf '  %-22s %-28s %s\n' 'who' 'where' 'state'
 printf '  %-22s %-28s %s\n' '----------------------' '----------------------------' '-----'
 
-while IFS="$TAB" read -r sess ppid cmd pane_of_sess; do
-	slot="$(awk -F"$TAB" -v s="$sess" '$1==s {print $2; exit}' "$opts")"
-
-	# where it is working. A slot says which of its repos have work in them,
-	# which is the closest thing to "what" that is free; anything else can only
-	# report the directory it was launched in.
+printf '%s\n' "$panes" | while IFS="$TAB" read -r sess ppid cmd path slot; do
 	if [ -n "$slot" ] && [ -d "$WS/Agent$slot" ]; then
-		repos="$("$HOME/dotfiles/bin/wstat" --list "$WS/Agent$slot" 2>/dev/null |
-			awk -F"$TAB" '{n=split($1,p,"/"); if(!seen[p[n]]++) printf "%s%s", (c++?", ":""), p[n]}')"
-		where="a$slot: ${repos:-clean}"
+		on=""
+		for g in "$WS/Agent$slot"/*/.git; do
+			[ -f "$g" ] || continue
+			case "$(cat "$(sed -n 's/^gitdir: //p' "$g")/HEAD" 2>/dev/null)" in
+			ref:*) wt="${g%/.git}"; on="$on${on:+, }${wt##*/}" ;;
+			esac
+		done
+		where="a$slot: ${on:-clean}"
 	else
-		where="$(basename "$(tmux display -p -t "$(printf '%s' "$sess" | sed 's/:/\\:/g')" '#{pane_current_path}' 2>/dev/null)" 2>/dev/null)"
-		[ -n "$where" ] || where='-'
+		where="${path##*/}"
 	fi
 
-	# state — every agent publishes the same shape, Claude natively and the
-	# others through a producer, so this is one reader for all of them
-	state='running'
+	state='running'; cwd="$path"
 	cpid="$(agent_pid_of "$ppid" "$cmd")" || cpid=""
-	sj="$(agent_state_json "$ppid" "$cmd")" || sj=""
-	if [ -n "$sj" ]; then
+	if sj="$(agent_state_json "$ppid" "$cmd")"; then
 		state="$(jq -r '
 			(.status // "?") as $s
 			| (((now * 1000) - (.statusUpdatedAt // 0)) / 60000 | floor) as $m
 			| if $m > 0 then "\($s) \($m)m" else $s end' "$sj" 2>/dev/null)"
 		[ -n "$state" ] || state='running'
+		[ "$WHAT" = 1 ] && cwd="$(jq -r '.cwd // empty' "$sj" 2>/dev/null)"
 	fi
 
-	printf '  %-22.22s %-28.28s %s\n' "$sess" "$where" "$state"
-	if [ "$WHAT" = 1 ] && [ -n "${cpid:-}" ]; then
-		# what it last SAID, off its own transcript — nothing sent, no turn
-		# spent, nothing rendered in its pane. One adapter per provider lives
-		# in pm-lastsaid, since each keeps its transcript in its own shape.
-		acwd=""
-		[ -n "$sj" ] && acwd="$(jq -r '.cwd // empty' "$sj" 2>/dev/null)"
-		[ -n "$acwd" ] || acwd="$(tmux display -p -t "$pane_of_sess" '#{pane_current_path}' 2>/dev/null)"
-		said="$("$HOME/dotfiles/bin/pm-lastsaid" "$cmd" "$cpid" "$acwd" 2>/dev/null)"
+	printf '  %-22.22s %-28.28s %s\n' "$sess" "${where:--}" "$state"
+	if [ "$WHAT" = 1 ] && [ -n "$cpid" ]; then
+		said="$("$HOME/dotfiles/bin/pm-lastsaid" "$cmd" "$cpid" "${cwd:-$path}" 2>/dev/null)"
 		[ -n "$said" ] && printf '      %.*s\n' "$((${COLUMNS:-120} - 10))" "$said"
 	fi
-done <"$panes"
+done
 
 printf '\n  message one: ListAgents for the live list, then SendMessage to its name.\n'
-printf '  Rarely — a message costs the other agent a turn.\n'
+printf '  Rarely: a message costs the other agent a turn.\n'
