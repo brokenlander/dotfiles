@@ -117,12 +117,25 @@ Acknowledge in one line which slot you're in, then wait for my task.
 EOF
 }
 
+# The text in an agent pane's prompt box: the lines between the last two rule
+# lines (the top one carries the session name) when the first starts with ❯.
+# Fails when no box is on screen.
+prompt_box() {  # pane
+	tmux capture-pane -p -t "$1" 2>/dev/null | awk '
+		/^────/ && /─[ \t]*$/ {
+			if (open && n > 0) { box = cur; found = 1; open = 0 } else { open = 1; cur = ""; n = 0 }
+			next
+		}
+		open { if (n++ == 0 && $0 !~ /^❯/) { open = 0; next } cur = cur $0 "\n" }
+		END { if (!found) exit 1; printf "%s", box }'
+}
+
 if [ "$mode" = rename ]; then
 	tmp="$(mktemp)"
-	tmux list-panes -a -F "#{pane_id}$TAB#{pane_pid}$TAB#{pane_current_command}$TAB#{session_name}" \
+	tmux list-panes -a -F "#{pane_id}$TAB#{pane_pid}$TAB#{pane_current_command}$TAB#{pane_in_mode}$TAB#{session_name}" \
 		>"$tmp" 2>/dev/null
 	did=0; busy=0; draft=0; fail=0
-	while IFS="$TAB" read -r pane ppid cmd sess; do
+	while IFS="$TAB" read -r pane ppid cmd inmode sess; do
 		[ "$cmd" = claude ] || continue
 		cpid="$(agent_pid_of "$ppid" claude)" || continue
 		f="$HOME/.claude/sessions/$cpid.json"
@@ -132,9 +145,14 @@ if [ "$mode" = rename ]; then
 		case "$(jq -r '.status // empty' "$f" 2>/dev/null)" in
 		busy) say "busy   $sess (still $cur), rerun when it is idle"; busy=$((busy + 1)); continue ;;
 		esac
+		if [ "$inmode" = 1 ]; then
+			say "busy   $sess (still $cur), it is scrolled back"; busy=$((busy + 1)); continue
+		fi
 		# Keys typed onto a draft would be submitted with it; an empty box is padded with U+00A0.
-		if [ -n "$(tmux capture-pane -p -t "$pane" 2>/dev/null |
-			grep '^❯' | tail -n 1 | sed 's/^❯//' | tr -d '\302\240 \t')" ]; then
+		if ! box="$(prompt_box "$pane")"; then
+			say "busy   $sess (still $cur), no prompt box on screen"; busy=$((busy + 1)); continue
+		fi
+		if [ -n "$(printf '%s' "$box" | sed 's/^❯//' | tr -d '\302\240 \t\n')" ]; then
 			say "draft  $sess (still $cur), clear its prompt box first"
 			draft=$((draft + 1)); continue
 		fi
