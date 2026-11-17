@@ -1,295 +1,203 @@
-# tmux-agent — Cyan's mission-control
+# tmux-agent
 
-Everything behind Andrea's tmux + Claude Code agent setup: the sidebar C program,
-the tmux config and scripts, and the Claude settings/theme. tmux is the
-orchestration surface — agents do the editing; this is how you launch, watch,
-diff, kill, reset, and resurrect them.
+How this tmux and coding-agent setup works: launching agents, watching
+them, ending and resetting them, and bringing them back after a tmux restart.
 
-**Where things live**
 | Piece | Location | Repo |
 |---|---|---|
-| tmux config + scripts | `~/dotfiles/tmux/`, `~/dotfiles/bin/` | `brokenlander/dotfiles` (public) |
-| sidebar C program | `~/forge/agent-sidebar/` | `brokenlander/agent-sidebar` (public) |
-| Claude settings/theme/statusline | `~/.claude/` | not a repo — local only |
-| persona | `~/.claude/CLAUDE.md` | local |
+| tmux config and scripts | `~/dotfiles/tmux/`, `~/dotfiles/bin/` | `brokenlander/dotfiles` (public) |
+| sidebar (C) | `~/forge/agent-sidebar/` | `brokenlander/agent-sidebar` (public) |
+| Claude settings, theme, statusline, persona | `~/.claude/` | none, local only |
 
-Commits go out as **`brokenlander <94259413+brokenlander@users.noreply.github.com>`**
-(the noreply — gmail leaks the real name on a public repo). **Never** add an AI
-co-author trailer (the commit-guard blocks it too). Use `git commit --no-verify`
-when file content legitimately contains `claude` (the CLI name) — the guard is a
-blunt word match.
+Commits to both repos go out as
+`brokenlander <94259413+brokenlander@users.noreply.github.com>`. No AI
+co-author trailer. `git commit --no-verify` when file content has to contain
+`claude` (the CLI name): the commit guard matches the word.
 
----
+## Keys
 
-## 1. The sidebar (C program) — `agent-sidebar`
-
-A small inotify-driven C TUI shown as a tmux pane, listing the agents and giving
-one-click nav. Built with `make` in `~/forge/agent-sidebar`; launched by the
-`sidebar.tmux` hook. Re-exec live instances after editing options with
-`touch ~/forge/agent-sidebar/agent-sidebar`.
-
-- **Zones:** agents → non-agent sessions → key legend.
-- **Options (`~/dotfiles/tmux/.tmux.conf`):** `@agent_sidebar_key 'e'`,
-  `@agent_sidebar_width '28'`, `@agent_sidebar_sessions 'on'`,
-  `@agent_sidebar_exclude 'scratch'`, `@agent_sidebar_picker_key 'o'`,
-  `@agent_sidebar_idle_wait '30'`, `@agent_sidebar_legend '…'` (see below).
-- **Amber ("needs you") is inferred** (2026-09-10). Claude never reports a
-  `waiting` status — under bypass it is never blocked on a permission prompt —
-  so the state was dead for every row but opencode's. An agent idle past
-  `@agent_sidebar_idle_wait` minutes is promoted to waiting, so it colours and
-  sorts with what wants you. It is a display rule over `statusUpdatedAt` (the
-  age column), **not** a hook: the scanner reads both `~/.claude/sessions/` and
-  the plugin dir and does **not** dedup by pid, so a hook writing a second file
-  for a Claude pid would show that agent twice, and writing into Claude's own
-  session file gets clobbered by the next status change. Parked agents are
-  exempt.
-- **Legend separator is `;`** (not `|`) so the `|`/`-` split keys can be shown.
-- Reads its options **once at startup** → re-exec after changing them.
-- Width-hold on resize; one control (open/close every session at once via a
-  window-linked hook); alt-screen fresh redraw (no stale rows); middle-click menu
-  (`-M -O`, needs tmux 3.5+); clickable session rows (left = jump, middle =
-  jump/kill menu).
-- Removed the craftzdog claude-session-manager plugin.
-
----
-
-## 2. tmux (`~/dotfiles/tmux/.tmux.conf`)
-
-tmux **3.7c** (`/usr/local/bin`; the old apt 3.4 is gone). Key legend, exactly as
-shown in the sidebar:
-
-`e sidebar · o agents · y sesh · s tree · d scratch · a new agent · q end agent ·
-r reset · g diff · | split · - split · x close`
+tmux 3.7c, `/usr/local/bin/tmux`. The prefix is the default, `C-b`.
 
 | Key | Action |
 |---|---|
-| `prefix e` | toggle the sidebar (all sessions at once) |
-| `prefix o` | agent picker (jump between agents) |
-| `prefix y` | **sesh** session jumper (popup) |
+| `prefix e` | sidebar on or off, in every session at once |
+| `prefix u` | agent picker |
+| `prefix y` | sesh session jumper |
 | `prefix s` | choose-tree |
-| `prefix d` | **scratch** floating popup (toggle); `prefix D` = detach |
-| `prefix a` | **new agent** — fuzzy picker → `pm-agent` (see §3) |
-| `prefix q` | **end agent** — kill session + reset its slot to main (no prompt) |
-| `prefix r` | **reset agent** — kill + relaunch same name/slot, fresh off main |
-| `prefix R` | reload tmux config (moved off `r`) |
-| `prefix g` | **diff** — `wdiff` full-screen fzf+delta drill-in |
-| `prefix \|` / `prefix -` | split left-right / top-bottom |
-| `prefix x` | close a pane (the "un-split") |
+| `prefix d` | scratch popup; `prefix D` detaches |
+| `prefix a` | new agent (`pm-agent-pick`) |
+| `prefix q` | end this agent and reset its slot, no prompt (`pm-agent-end`) |
+| `prefix o` | reopen a closed conversation (`pm-agent-reopen`) |
+| `prefix b` | branch this conversation into its own session (`pm-agent-branch`) |
+| `prefix r` | reset this agent (`pm-agent --reset`) |
+| `prefix B` | this session's board window |
+| `prefix R` | reload the tmux config |
+| `prefix \|`, `prefix -` | split right, split down; `prefix x` closes a pane |
 
-- **The bar** (`status-right`): `@label` maps `pane_current_command` so a `claude`
-  pane shows **`cyan`**, sitting between the path and the clock.
-- **Click-to-diff:** left-click a file row in a `diff` window → `wclick` pops that
-  file's full delta diff. Scoped to `diff` windows / the wstat pane; all other
-  mouse behaviour (select, copy, right-click paste) unchanged.
-- **Pickers** are styled by `~/dotfiles/tmux/fzf-theme.sh` (Tokyo Night, rounded
-  border + label, `❯` pointer) and shown with `display-popup -B` (single frame).
+Pickers share `tmux/fzf-theme.sh` and open with `display-popup -B`. The status
+bar forks nothing: no `#()` anywhere in a format.
 
----
+## Sidebar
 
-## 3. The agent workflow (`~/dotfiles/bin/`)
+`agent-sidebar` is an inotify-driven C program shown as a 28-column pane in
+every window by the `sidebar.tmux` hook. It lists agents, then the other
+sessions, then one `? shortcuts` row that opens `@agent_sidebar_legend` as a
+menu. Its README has the detail. What matters from here:
 
-**Why AgentN slots, not `cld --worktree`:** privatemind is a *workspace* repo +
-**5 separate gitignored sub-repos** (app, gateway, app-db, gateway-db, helm); one
-worktree can't span them. And Claude memory keys off the **exact cwd** (separate
-`~/.claude/projects/…` dirs per subdir), so Claude must launch from
-`~/forge/privatemind` itself to keep the global memory — the slot is passed in a
-brief, not by running inside `AgentN/`.
+- Options are in `.tmux.conf` (`@agent_sidebar_key`, `_sessions`, `_exclude`,
+  `_picker_key`, `_idle_wait`, `_legend`) and are read once at startup. After
+  changing one, `touch ~/forge/agent-sidebar/agent-sidebar` makes every live
+  sidebar restart itself.
+- `make` in that checkout replaces the binary every live sidebar runs. Build
+  and test from a copy.
+- The width is fixed at 28 and the legend is one row. Both were asked for.
+- Amber is inferred: an agent idle longer than `@agent_sidebar_idle_wait`
+  minutes shows as waiting. Claude never reports that state itself.
 
-- **`prefix a` → `pm-agent-pick`** — fuzzy dir picker (privatemind pinned, zoxide
-  dirs, `ctrl-f` finds any dir under `$HOME`). privatemind → a slot; any other dir
-  → a plain agent in that repo. **Enter launches whichever agent you used last**,
-  so the common case costs no extra keystroke; **`^y` claude · `^o` opencode ·
-  `^x` codex** pick a different one and that becomes the new default. (Built on
-  fzf `--expect` — this fzf is 0.44 and has no `transform-border-label`, so the
-  agent can't be cycled live inside the picker.)
-- **`pm-agent [dir]`** — claim a FREE `AgentN` slot (or make next N) → reset its 5
-  sub-repos to origin/main → launch the chosen agent from the privatemind ROOT
-  with a brief pinning the slot → open a `diff` window (`wstat AgentN`); the
-  agent's own window is named after it (**`Cyan`** for claude, else the agent
-  name) via an explicit `-n`, so tmux won't auto-rename it. Stamps `@pm_slot <N>`
-  and `@pm_agent <id>` (rename-proof; targets tmux by session-id).
-  - Claude is launched with **`--name <tmux session name>`**, so tmux, the
-    sidebar and Claude's own peer listing all call the session the same thing.
-    Without it Claude derives one (`privatemind-07`) and the three disagree,
-    which makes agent-to-agent messaging guesswork. opencode and codex have no
-    equivalent flag.
-  - `--agent <id>` (`-a`) picks the agent; without it, the last-used one.
-  - **Free-slot rule:** busy only while a tmux session holds it (`privatemind-a<N>`
-    via `@pm_slot`, or a pane inside the slot). **48h guard:** uncommitted work
-    blocks reuse only while fresh (<48h); older is reset on reuse. Committed
-    branches always survive (reuse only detaches).
-  - **Orphaned slots** (added 2026-09-10): when an agent dies its session keeps
-    standing — the `diff` window holds it up — so the slot stays claimed
-    forever. `--slots` now reports `orphan` when nothing in the holding sessions
-    is a live agent, and `--prune` offers to end them. Inferred, not hooked: a
-    `SessionEnd` hook misses exactly the cases that matter, since a crash or a
-    kill fires nothing. Prune ends only the session and leaves the worktrees to
-    reuse's 48h guard.
-  - `pm-agent --slots` (`-l`) tracker · `--dry-run` (`-n`) shows the pick.
-- **`prefix q` → `pm-agent-end`** — kill the session; if it's a slot, reset it to
-  origin/main (clean, reusable). No prompt (`run-shell -b`).
-- **`prefix r` → `pm-agent --reset`** — **start over**: kill + relaunch, same
-  name/slot, a slot's repos pulled fresh off main, and a **new conversation**
-  briefed from scratch. When an agent has gone wrong, what it believed is part
-  of what went wrong.
-- **`pm-agent --restart [session]`** — **same agent, new process**: nothing is
-  wiped (no worktree touched, slot kept) and the conversation is **resumed**.
-  For a wedged process, or to pick up a shell snapshot taken after a config
-  change — a restart that used to cost the conversation. No key binding; it is
-  the deliberate one. Only claude resumes an exact conversation (see the
-  resume-fidelity note above), so for the other two it degrades to a fresh
-  start. The id is read from the live process's session file, never the pane's
-  `@claude_session` tag, which goes stale on resume and compact.
-- **`pm-agent --rename`** — sync the display name of every *live* Claude session
-  to its tmux session name (for sessions started before `--name`, or after a
-  `rename-session`). It types `/rename` — a local slash command, no model call —
-  into each pane, and **skips** any pane that is busy or already has something
-  in its prompt box (keys sent there would append to the draft and Enter would
-  submit the mixture as that agent's next message). It reads the name back
-  afterwards rather than assuming, and reports what it skipped. The session you
-  run it *from* is always busy, so it never renames itself — run it from another
-  session, or rename this one by hand with `/rename`.
-- **`pm-agent-defs`** — the **agent registry**, sourced by the picker, the
-  launcher and the resurrector so all three agree. One entry per agent gives its
-  tmux window name, its launch command (each takes the slot brief as a first
-  message: claude positionally, codex positionally, opencode via `--prompt`; and
-  a display name where the agent supports one) and its resume command. Last-used agent is remembered in
-  `${XDG_STATE_HOME:-~/.local/state}/pm-agent/last-agent`, written on every
-  successful launch. **Add an agent here and the picker, reset and resurrection
-  all pick it up.**
-- **`pm-agent --prune`** — reclaim what finished sessions leave behind: the
-  ad-hoc worktrees they cut beside the canonical five, free slots still holding
-  stale edits, and local branches git says are already **merged into
-  origin/main** (the commits are in main; only the ref goes). It **prints the
-  plan and changes nothing** — `--prune --yes` applies it. A slot a session
-  holds is never touched, an ad-hoc worktree with uncommitted work younger than
-  48h protects itself (same rule as the slots), and a branch checked out in any
-  worktree is left alone. It tries `-d` first, but `-d` measures against a
-  branch's **upstream** — which for a renamed or re-targeted PR is some other
-  remote branch entirely — so it refuses refs that are demonstrably in
-  origin/main; on that refusal the ancestry is re-asserted against origin/main
-  and only then forced — so a branch freed by a removal in the same run gets
-  picked up on the next one.
-- **`wstat [dir]`** — the live `diff` dashboard: each repo's footprint vs its fork
-  point from origin/main (committed + uncommitted + untracked), **+/- per file**.
-  So each agent's window shows *only that agent's work*. `wstat --list DIR` is the
-  machine feed. **`--once`/`--list` must be the FIRST arg** or it hangs.
-- **`wdiff [dir]` (`prefix g`)** — fzf list + live delta preview; Enter = full
-  diff, `q` back, ctrl-r refresh. Full-screen popup. Replaced lazygit. (A
-  `--watch` mode existed to make the `diff` window an fzf picker; Andrea
-  rejected that in favour of the wstat dashboard, so it had no caller and was
-  removed 2026-09-10.)
-- **`wclick`** — the click-to-diff handler behind the `MouseDown1Pane` binding.
-- **`pm-roster`** — the address book for agent-to-agent messaging: one line per
-  live agent giving the name a peer addresses it by, where it is working (its
-  slot and which of that slot's repos have work, or the dir it was launched in)
-  and its state. The "what" is close to free because the tmux session name is
-  already the topic. `~/.claude/CLAUDE.md` points every agent at it, so they can
-  find each other without being told. **Sparingly** — a message costs the
-  recipient a whole turn, and a one-line question has triggered a 90-second
-  investigation.
-  - **`--what` (`-w`)** appends each agent's last line, read from its transcript
-    on disk. Free: nothing sent, no turn, nothing rendered in its pane. Most of
-    what you would ask is already answered there — both blockers found by
-    messaging on 2026-09-10 were already written down. **Ask only what has not
-    been thought yet**; that is the only thing that has to cost a turn.
-    Claude-only for now (see the cross-provider note in §4).
+## Agents
 
----
+A privatemind agent gets a slot: `~/forge/privatemind/Agent<N>/` holding one
+worktree per sub-repo (app, gateway, app-db, gateway-db, helm). One worktree
+cannot span five repos, and Claude keys its memory to the exact cwd, so the
+agent is launched from the workspace root and told its slot in a brief.
 
-## 4. The resurrection system (survive a tmux restart)
+- **`pm-agent [dir]`** (`prefix a` picks the dir). For the workspace: take the
+  first free slot or make the next one, put its worktrees on origin/main,
+  write the brief, start the agent in a session named `privatemind-a<N>` with
+  a `board` window beside it. For any other dir: a plain agent in that repo,
+  no slot. The session is stamped `@pm_slot` and `@pm_agent`.
+  - Claude starts with `--name <session name>` so tmux, the sidebar and
+    Claude's peer list agree on what a session is called.
+  - A slot is free when no session holds it (by stamp, or by a pane inside
+    it) and it has no uncommitted work under 48 h old. Older uncommitted work
+    is reset on reuse. Committed branches always survive.
+  - `--slots` lists every slot. `orphan` means a session still holds the slot
+    with no agent left in it. `--dry-run` shows the pick.
+- **`pm-agent-pick`**: privatemind pinned first, then zoxide dirs, `^f` finds
+  any dir. Enter starts the agent used last; `^y` claude, `^o` opencode, `^x`
+  codex.
+- **`pm-agent-defs`**: the registry the launcher, picker, roster and restore
+  all source. An agent added there needs a launch command that takes a first
+  prompt and a resume command.
+- **`prefix q`, `pm-agent-end`**: kill the session, clear its board status,
+  reset its slot to origin/main. Uncommitted work in the slot is discarded.
+- **`prefix r`, `pm-agent --reset`**: start over. Same name and slot,
+  worktrees back to origin/main, a new conversation.
+- **`pm-agent --restart [session]`**: new process, same conversation, nothing
+  wiped. No key on purpose. Only claude resumes the exact conversation.
+- **`prefix b`, `pm-agent-branch`**: `claude --resume <id> --fork-session` in
+  a new session. The fork takes no `@pm_slot`, so ending it never resets the
+  parent's worktrees.
+- **`prefix o`, `pm-agent-reopen`**: pick a conversation that is on disk and
+  not running (`pm-conversations` lists them, this project first, `^a` all)
+  and resume it in its own session. It takes no `@pm_slot` either.
+- **`pm-agent --prune`**: prints a plan and changes nothing; `--yes` applies
+  it. It ends orphaned sessions, drops stale ad-hoc worktrees in free slots,
+  resets free slots holding stale edits and deletes local branches already in
+  origin/main. Only on the owner's go.
+- **`pm-agent --rename`**: types `/rename <session name>` into live claude
+  panes whose name has drifted. It skips busy panes and panes with a draft.
+  Only on the owner's go.
 
-`tmux kill-server` then `tmux` brings **every session back AND resumes each
-Claude conversation**. Save the state first (`~/.tmux/plugins/tmux-resurrect/scripts/save.sh`,
-or `prefix Ctrl-s`); the systemd `tmux-resurrect-save` timer also auto-saves ~every 30 min.
+`PM_WS` and `PM_REPOS` point all of this at a throwaway workspace for testing.
+Sessions are targeted by id (`$N`), never by name: tmux reads a dot in a name
+as window.pane.
 
-- **`tmux-resurrect`** restores the layout; auto-restores on a fresh server boot
-  (an `if-shell` on server-start in the conf).
-- **`~/dotfiles/tmux/claude-pane-hook.sh`** (SessionStart hook, wired in
-  `settings.json`) tags each pane `@claude_session` = the session id.
-- **`~/dotfiles/tmux/claude-panes.sh`** (resurrect save/restore hooks) — handles
-  every agent in the registry; the filename is historical (the tmux hooks
-  reference it).
-  - **save** → records each agent pane's session/window/pane/path/**agent**/id/args.
-  - **restore** → relaunches per agent: `claude <args> --name <session>
-    --resume <id>`, `opencode --continue`, `codex … resume --last`. The name is
-    re-applied from the saved tmux session name because a resumed session would
-    otherwise derive a fresh one — and `args_of` **must** drop `--name`, since a
-    kept-but-valueless `--name` swallows `--resume` as its argument.
-  - **`diff` dashboards are restored too** (fixed 2026-09-10). tmux-resurrect
-    only restores a pane's *program* when `@resurrect-processes` is set, and it
-    is not — so every pane returns as a bare shell, and only the agents were
-    ever relaunched. `wstat` is a `sh` script, so `pane_current_command` reads
-    `sh` and cannot identify it; the save reads the pane process's argv instead.
-    **`claude-panes.sh revive`** repairs any `diff` window already sitting on a
-    shell, without waiting for a restart.
-  - **Fidelity caveat:** only claude exposes a per-pane session id, so only claude
-    resumes the *exact* conversation. opencode continues the newest session for
-    that project dir (usually right); codex's `--last` is global, so two codex
-    panes restored together both land on the same conversation.
+## Board
 
-**Two bugs fixed 2026-09-07/08 (commit `b61ed2c`):**
-1. `args_of` kept positional args, so a slot's bootstrap prompt was replayed ahead
-   of `--resume` and the agent choked → now keeps **only flags**.
-2. the `@claude_session` tag goes **stale/crossed** on resume/compact (proven:
-   Herd's tag pointed at Iceland PO's id) → `tag_panes` now re-reads the id from
-   the **live process's** `~/.claude/sessions/<pid>.json` for **every** pane, not
-   just untagged ones. That file (keyed by pid) is ground truth.
+`pm-board` is the fleet's quiet channel. `pm-board --help` is the manual; the
+"Other agents" paragraph of `~/.claude/CLAUDE.md` is how agents learn it.
+State is under `~/.local/state/agent-sidebar/`: `board.jsonl` (statuses),
+`posts.jsonl` (notes), each with a `.log` of what ended.
 
-**Gotcha:** a brand-new session doesn't write its `<id>.jsonl` transcript until the
-first message — so a just-started, never-used pane won't `--resume` until you type
-in it once (nothing to resume anyway).
+- **`pm-board`** alone is an agent's briefing: its own status, unread notes,
+  clashes that involve it, who else is on what.
+- **Status**: `pm-board claim [path…] --what "…"`, one per tmux session,
+  cleared by `pm-board done`. It lapses 2 h after the later of its last write
+  and the agent's last activity. Paths are normalised so slots compare
+  (`Agent6/helm/x` is `helm/x`), a path is resolved against the cwd, the
+  slot, the workspace, `~/forge` and `~`, whichever has it, and a path
+  outside `~/forge` is written from `~`. Overlapping another agent's path
+  prints who holds it and exits 2; a claim on a whole slot repo (`app`,
+  `helm`) clashes only with the same claim. When
+  the sentence is over 90 minutes old the agent's next prompt carries one
+  reminder.
+- **Holds**: `pm-board hold NAME… --what "…"` before a release, a pin move
+  or a prod sync; `pm-board free [NAME…]` after. While one agent has a name
+  nobody else can take it: the command says who has it and exits 2, and the
+  agent that was stopped gets a note when it is free. `all` stops every name.
+  A hold lapses like a status, `pm-board done` frees it, and after 30 minutes
+  the holder's next prompt reminds it. `pm-board holds [NAME…]` lists them
+  and exits 2 when another agent has one, for scripts. `--pid N` ties a hold
+  to a process: it goes when the process does, never lapses while it runs,
+  and a second run by the same agent is stopped too. `release.sh` takes its
+  service's hold this way, so an agent holds by hand only for what spans
+  more than one run (pin moves, a prod sync). Holds lead the
+  briefing and the board page. They replaced "please hold … until I post
+  done" posts to everyone, which were 84% of those posts and were misread
+  four times.
+- **Notes**: `pm-board post "…" --to NAME`, `--path P` for whoever holds a
+  path, or to everyone (3 an hour at most). NAME is a session name or a slot
+  (`a7`); `pm-board reply ID "…"`;
+  `pm-board read [--all]`. 600 characters at most. A thread lives 24 h past
+  its last post, then moves to `posts.log`.
+- **Delivery**: a note addressed to an agent, a reply in its thread or a post
+  on a path it claims is added to its context after its next tool call
+  (`pm-board-hook` on SessionStart and PostToolUse, `pm-board hook` on
+  UserPromptSubmit). Posts to everyone are never pushed. An idle agent reads
+  a note when it next works, and `post` says so; `SendMessage` wakes one.
+- **The `board` window** (`pm-board watch`, `prefix B`): messages on the left
+  (`h` swaps in the last 7 days), and on the right holds, collisions, who
+  needs you, who is on what, and what ended. A collision counts only
+  between agents that worked in the last 24 hours; agents idle for over a day
+  are one line under NEEDS YOU. It draws only while visible and
+  restarts itself when `pm-board` changes and still compiles.
 
----
+## Roster
 
-## 5. Claude settings (`~/.claude/`)
+`pm-roster` prints one line per live agent: the name a peer addresses, its
+slot and the worktrees there that are on a branch, and its state. `-w` adds
+the last thing each agent said, read from its transcript (`pm-lastsaid`), which
+costs that agent nothing.
 
-**`settings.json`** keys: `model`, `statusLine`, `theme`, `hooks` (the SessionStart
-tag hook), `skipDangerousModePermissionPrompt` (skips the bypass startup confirm),
-`effortLevel`, `tui`, `enabledPlugins`.
+## Surviving a tmux restart
 
-**`statusline.sh`** — reads the session JSON on stdin, prints a one-line status.
-Model tier **aliases** (edit the block at the top): Fable→**Prime**, Opus→**Swift**, Sonnet→**mini**,
-Haiku→**nano**. Current format: `<model> · <dir> · <branch> · <ctx%>` (model in
-cyan; the `🦋 Cyan` brand prefix was removed since the tmux bar already shows it —
-the `EMOJI`/`BRAND` vars remain, unused, for an easy re-add).
+`tmux-resurrect` restores the layout from the last save, and a fresh server on
+the default socket restores by itself. Saves are by hand, `prefix C-s`; the
+30-minute timer is off.
 
-**`themes/cyan.json`** — custom theme, activated via `settings.json`
-`"theme": "custom:cyan"`. Tokyo Night palette (brand cyan `#7dcfff`), tuned diffs,
-full subagent color set. The `⏵⏵ bypass permissions` footer is driven by the
-**`error`** token (shared with error text and the don't-ask mode — there is no
-bypass-only token); it's set to the agent-counter grey `#565f89` so it reads as
-parked rather than shouting. `permission` was never the lever. **Gotcha:** the themes folder must exist when the CLI starts — created
-mid-session it needs ONE restart to be watched; after that, edits hot-reload
-(the statusline hot-reloads always).
+`tmux/claude-panes.sh` runs from the resurrect hooks. On save it records every
+agent pane with its conversation id and flags. On restore it relaunches each
+one (`claude <flags> --name <session> --resume <id>`, `opencode --continue`,
+`codex … resume --last`) and restarts the boards. `claude-panes.sh revive`
+restarts any board left on a bare shell.
 
-**`CLAUDE.md`** — the **Cyan** persona (butterfly-in-the-wire; sharp, witty,
-honest). This is the identity layer — in-conversation it's already "Cyan," not
-"Claude."
+- The conversation id comes from the live process's
+  `~/.claude/sessions/<pid>.json`. The pane tag `@claude_session` goes stale
+  on resume and compact.
+- `args` keeps flags, and the value of the few that take one. A positional
+  prompt, `--name`, `--resume` and `--fork-session` are dropped.
+- Only claude resumes the exact conversation. opencode continues the newest
+  one for the dir, codex the newest one anywhere.
+- A session that has never had a message has no transcript to resume.
 
----
+## Claude settings
 
-## 6. TODO / open items
+- `statusline.sh`: `<model> · <dir> · <branch> · <ctx%>`, with the model
+  shown under an alias set at the top of the file.
+- `themes/cyan.json`, used as `"theme": "custom:cyan"`. The bypass-permissions
+  footer takes the `error` colour. `~/.claude/themes/` must exist when the CLI
+  starts.
+- `settings.json` hooks: `tmux/claude-pane-hook.sh` (tags the pane),
+  `bin/pm-board-hook` and `pm-board hook`. Running sessions pick up hook
+  changes without a restart.
+- The startup banner cannot be changed by config. Patching the CLI is out.
 
-- **Startup banner rebrand → NOT achievable via config.** The `Claude Code`
-  wordmark is hardcoded; no setting/env/plugin overrides it. Only patching would,
-  which is the ToS line we won't cross.
-- **Bypass-permissions indicator** (`⏵⏵ bypass permissions on`) — DONE 2026-09-08:
-  it's the **`error`** token (pulled from the bundle's mode→color map), matched to
-  the `← N agent` counter grey. Cost: error text shares the tone. It **cannot be
-  hidden** while in bypass mode — only leaving bypass (shift+tab) removes it.
-- **History identity — DONE 2026-09-10.** All 161 commits on both branches are
-  `brokenlander <94259413+…>`; the 102 that carried a personal address were
-  rewritten with `git filter-repo --mailmap` in a throwaway clone, verified
-  content-identical (every tree hash, author date and subject unchanged), then
-  force-pushed with a lease. Committer `GitHub <noreply@github.com>` on 31
-  web-UI merges was deliberately left alone — it is not a personal identity.
-  Cost: those 31 lose their "Verified" badge, since a rewrite drops signatures.
-  Pre-scrub history is kept locally on the `backup/pre-identity-scrub-20260910-*`
-  tags. **The repo still names him in `git/.gitconfig` (`name = Andrea Moccia`)
-  and in this file** — file contents were not in scope; `.gitconfig` is his real
-  git identity for every other repo on the box, so changing it is a live
-  decision, not cleanup.
-- **memories / personality** — further Cyan customization to explore.
-- `PM_WS` / `PM_REPOS` override the workspace and its sub-repo list, so the
-  destructive paths can be exercised against a throwaway checkout.
+## Open
+
+- codex has no sidebar producer, so a codex agent shows no state.
+- Messaging works only between Claude sessions. State and transcripts read
+  for all three agents.
+- `git/.gitconfig` in this public repo carries its owner's name. His call.
+- The pre-scrub history lives only on the local tags
+  `backup/pre-identity-scrub-20260910-{main,kubuntu}`.
