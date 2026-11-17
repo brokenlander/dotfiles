@@ -18,21 +18,30 @@ co-author trailer. `git commit --no-verify` when file content has to contain
 
 tmux 3.7c, `/usr/local/bin/tmux`. The prefix is the default, `C-b`.
 
+The `? shortcuts` row in the sidebar shows the same keys in two groups.
+
+**herd**, the agent keys:
+
 | Key | Action |
 |---|---|
-| `prefix e` | sidebar on or off, in every session at once |
-| `prefix u` | agent picker |
-| `prefix y` | sesh session jumper |
-| `prefix s` | choose-tree |
-| `prefix d` | scratch popup; `prefix D` detaches |
 | `prefix a` | new agent (`pm-agent-pick`) |
-| `prefix q` | end this agent and reset its slot, no prompt (`pm-agent-end`) |
+| `prefix u` | agent picker |
+| `prefix e` | sidebar on or off, in every session at once |
+| `prefix B` | this session's board window |
 | `prefix o` | reopen a closed conversation (`pm-agent-reopen`) |
 | `prefix b` | branch this conversation into its own session (`pm-agent-branch`) |
 | `prefix r` | reset this agent (`pm-agent --reset`) |
-| `prefix B` | this session's board window |
-| `prefix R` | reload the tmux config |
+| `prefix q` | end this agent and reset its slot, no prompt (`pm-agent-end`) |
+
+**tmux**:
+
+| Key | Action |
+|---|---|
+| `prefix y` | sesh session jumper |
+| `prefix s` | choose-tree |
+| `prefix d` | scratch popup; `prefix D` detaches |
 | `prefix \|`, `prefix -` | split right, split down; `prefix x` closes a pane |
+| `prefix R` | reload the tmux config |
 
 Pickers share `tmux/fzf-theme.sh` and open with `display-popup -B`. The status
 bar forks nothing: no `#()` anywhere in a format.
@@ -45,7 +54,8 @@ sessions, then one `? shortcuts` row that opens `@agent_sidebar_legend` as a
 menu. Its README has the detail. What matters from here:
 
 - Options are in `.tmux.conf` (`@agent_sidebar_key`, `_sessions`, `_exclude`,
-  `_picker_key`, `_idle_wait`, `_legend`) and are read once at startup. After
+  `_picker_key`, `_idle_wait`, `_legend`) and are read once at startup. In
+  the legend a word ending in `:` (`herd:`) starts a titled section. After
   changing one, `touch ~/forge/agent-sidebar/agent-sidebar` makes every live
   sidebar restart itself.
 - `make` in that checkout replaces the binary every live sidebar runs. Build
