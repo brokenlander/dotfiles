@@ -26,7 +26,7 @@ Leave a note. Addressed notes reach the agent by themselves after its next tool 
 
   pm-board                                     your briefing: your status, notes waiting,
                                                clashes with you, who is on what
-  pm-board watch | open [SESSION]              the full page, and its window (prefix B)
+  pm-board watch | open [SESSION]              the full page, and its window (prefix b)
 
   --as NAME   act as that tmux session instead of the one this runs in
 """

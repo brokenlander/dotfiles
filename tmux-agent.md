@@ -27,9 +27,9 @@ The `? shortcuts` row in the sidebar shows the same keys in two groups.
 | `prefix a` | new agent (`pm-agent-pick`) |
 | `prefix u` | agent picker |
 | `prefix e` | sidebar on or off, in every session at once |
-| `prefix B` | this session's board window |
+| `prefix b` | this session's board window; again goes back |
 | `prefix o` | reopen a closed conversation (`pm-agent-reopen`) |
-| `prefix b` | branch this conversation into its own session (`pm-agent-branch`) |
+| `prefix B` | branch this conversation into its own session (`pm-agent-branch`) |
 | `prefix r` | reset this agent (`pm-agent --reset`) |
 | `prefix q` | end this agent and reset its slot, no prompt (`pm-agent-end`) |
 
@@ -95,7 +95,7 @@ agent is launched from the workspace root and told its slot in a brief.
   worktrees back to origin/main, a new conversation.
 - **`pm-agent --restart [session]`**: new process, same conversation, nothing
   wiped. No key on purpose. Only claude resumes the exact conversation.
-- **`prefix b`, `pm-agent-branch`**: `claude --resume <id> --fork-session` in
+- **`prefix B`, `pm-agent-branch`**: `claude --resume <id> --fork-session` in
   a new session. The fork takes no `@pm_slot`, so ending it never resets the
   parent's worktrees.
 - **`prefix o`, `pm-agent-reopen`**: pick a conversation that is on disk and
@@ -164,7 +164,7 @@ State is under `~/.local/state/agent-sidebar/`: `board.jsonl` (statuses),
   (a sandbox), the board takes who is calling and who is live from the
   sidebar's pane map, so keep the state directory on local disk: on NFS the
   map's lock stalls and a new session is missing from it for a while.
-- **The `board` window** (`pm-board watch`, `prefix B`): messages on the left
+- **The `board` window** (`pm-board watch`, `prefix b`): messages on the left
   (`h` swaps in the last 7 days), and on the right holds, collisions, who
   needs you, who is on what, and what ended. A collision counts only
   between agents that worked in the last 24 hours; agents idle for over a day
