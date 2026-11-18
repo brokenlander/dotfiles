@@ -6,6 +6,7 @@ about two hours after you stop:
   pm-board claim [PATH...] --what "one line"   set or update your status; paths warn others off
   pm-board claim                               renew it as it is
   pm-board done [PATH...]                      release those paths, or clear your status
+  pm-board guard PATH                          exit 2 and say who, if another agent holds it
 
 Before a release, a pin move or a prod sync, take its hold. Nobody else can
 while you have it, so there is nothing to announce:
@@ -19,6 +20,7 @@ Leave a note. Addressed notes reach the agent by themselves after its next tool 
   pm-board post "TEXT" --to NAME               to one agent, by name or slot (a7); repeat --to for more
   pm-board post "TEXT" --path PATH             to whoever holds that path
   pm-board post "TEXT"                         to everyone: rare, at most 3 an hour
+  --wake on a post wakes an idle OpenCode addressee with the note
   pm-board reply ID "TEXT"                     answer in a thread
   pm-board read [--all]                        notes for you, and notes to everyone
 
@@ -100,9 +102,61 @@ def die(msg, code=1):
     sys.exit(code)
 
 
+_reach = None
+
+
+def tmux_reachable():
+    global _reach
+    if _reach is None:
+        _reach = subprocess.run(["tmux", "list-sessions", "-F", ""], capture_output=True).returncode == 0
+    return _reach
+
+
+def pane_map():
+    sock = os.path.basename(os.environ.get("TMUX", "").split(",")[0]) or "default"
+    try:
+        rows = [l.split("\t") for l in (STATE / f"panes-{sock}").read_text().splitlines()]
+    except OSError:
+        return []
+    return [r for r in rows if len(r) >= 4]
+
+
+def pid_tty(pid):
+    try:
+        nr = int(Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[4])
+    except (OSError, ValueError, IndexError):
+        return ""
+    return f"/dev/pts/{nr & 0xff | (nr >> 12 & 0xfff00)}" if nr >> 8 & 0xfff in range(136, 144) else ""
+
+
+def mapped_rows():
+    by_tty = {r[0]: r for r in pane_map()}
+    rows = []
+    for f in list((CFG / "sessions").glob("*.json")) + list((STATE / "agents").glob("*.json")):
+        pid = f.name.split(".")[0]
+        r = by_tty.get(pid_tty(pid)) if pid.isdigit() else None
+        if r:
+            rows.append("\t".join((r[3], r[1], pid, r[2], "")))
+    return rows
+
+
+def map_answer(args):
+    fmt = args[-1] if args else ""
+    target = args[args.index("-t") + 1] if "-t" in args and args.index("-t") + 1 < len(args) else ""
+    panes = pane_map()
+    if args[:1] == ("list-panes",) and fmt == "#{pane_id}":
+        return "\n".join(r[2] for r in panes)
+    row = next((r for r in panes if target in (r[2], r[1], r[3], r[3] + ":")), None)
+    if row and args[:1] == ("display-message",):
+        return {"#{session_name}": row[3], "#{session_id}": row[1]}.get(fmt, "")
+    return ""
+
+
 def tmux(*args):
     r = subprocess.run(["tmux", *args], capture_output=True, text=True)
-    return r.stdout.strip() if r.returncode == 0 else ""
+    if r.returncode == 0:
+        return r.stdout.strip()
+    return "" if tmux_reachable() else map_answer(args)
 
 
 def take(argv, flag):
@@ -220,13 +274,14 @@ def sessions():
     out = subprocess.run(["tmux", "list-sessions", "-F", "#{session_id}\t#{session_name}"],
                          capture_output=True, text=True)
     if out.returncode != 0:
-        return None
+        return None if tmux_reachable() else {r[1]: r[3] for r in pane_map()}
     return dict(l.split("\t", 1) for l in out.stdout.splitlines() if "\t" in l)
 
 
 def fleet(idle_wait=1800):
     fmt = "\t".join(("#{session_name}", "#{session_id}", "#{pane_pid}", "#{pane_id}", "#{@pm_slot}"))
-    rows = subprocess.run(["tmux", "list-panes", "-a", "-F", fmt], capture_output=True, text=True).stdout.splitlines()
+    listed = subprocess.run(["tmux", "list-panes", "-a", "-F", fmt], capture_output=True, text=True)
+    rows = listed.stdout.splitlines() if listed.returncode == 0 or tmux_reachable() else mapped_rows()
     parked, frozen = name_list("parked"), name_list("frozen")
     now = time.time()
     agents, seen = [], set()
@@ -695,6 +750,9 @@ def my_claims(me, now, agents=None):
 
 def cmd_post(argv, reply_to=None):
     me, slot, sid = whoami(argv)
+    wake = "--wake" in argv
+    if wake:
+        argv.remove("--wake")
     to = []
     while "--to" in argv:
         to.append(take(argv, "--to"))
@@ -737,9 +795,37 @@ def cmd_post(argv, reply_to=None):
     print(f"posted {post['id']} {where}{tail}")
     if broadcast(post) and re.search(r"\b(hold|releasing)\b", text, re.I):
         print("  for a release, pin or prod hold use pm-board hold NAME: it stops the others, a post only asks them")
+    kinds = {a["name"]: a["kind"] for a in fleet(0)} if idle or wake else {}
+    woken = [n for n in idle if wake and kinds.get(n) == "opencode"]
+    for s in (s for n, s in targets if n in woken):
+        (STATE / "wake").mkdir(parents=True, exist_ok=True)
+        (STATE / "wake" / s.lstrip("$")).write_text(post["id"])
+    if woken:
+        print(f"  waking {', '.join(woken)}")
+    idle = [n for n in idle if n not in woken]
     if idle:
+        how = "pm-board post --wake wakes an OpenCode agent, SendMessage wakes the others" \
+            if any(kinds.get(n) == "opencode" for n in idle) else "SendMessage wakes an agent"
         print(f"  {', '.join(idle)} {'is' if len(idle) == 1 else 'are'} idle and will read it when next working; "
-              "if it cannot wait, SendMessage wakes an agent")
+              f"if it cannot wait, {how}")
+
+
+def cmd_guard(argv):
+    pane = os.environ.get("TMUX_PANE", "")
+    me = tmux("display-message", "-p", "-t", pane, "#{session_name}") if pane else ""
+    if not me or not argv:
+        return
+    path, now = norm(argv[0]), time.time()
+    held = [(r, q) for r in visible(read(), int(now), fleet(0)) if r["agent"] != me
+            for q in r.get("paths", []) if clash(path, q)]
+    if not held:
+        return
+    for r, q in held:
+        print(f"{path} is held on the board by {label(r)} for {age(now - r.get('since', now))}"
+              + (f": {r['what']}" if r.get("what") else ""))
+    print(f"Settle it before you edit: pm-board post \"…\" --to {held[0][0]['agent']}. "
+          "If it is settled, repeat the edit.")
+    sys.exit(2)
 
 
 def cmd_reply(argv):
@@ -2234,7 +2320,7 @@ def main():
     verb = argv.pop(0) if argv and not argv[0].startswith("-") else "ls"
     cmds = {"claim": cmd_claim, "done": cmd_done, "ls": cmd_ls, "watch": cmd_watch, "open": cmd_open,
             "post": cmd_post, "reply": cmd_reply, "read": cmd_read, "hook": cmd_hook,
-            "hold": cmd_hold, "free": cmd_free, "holds": cmd_holds}
+            "hold": cmd_hold, "free": cmd_free, "holds": cmd_holds, "guard": cmd_guard}
     if verb not in cmds:
         die(f"unknown command {verb!r}\n\n{__doc__.strip()}")
     cmds[verb](argv)

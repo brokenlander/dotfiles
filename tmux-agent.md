@@ -156,6 +156,14 @@ State is under `~/.local/state/agent-sidebar/`: `board.jsonl` (statuses),
   (`pm-board-hook` on SessionStart and PostToolUse, `pm-board hook` on
   UserPromptSubmit). Posts to everyone are never pushed. An idle agent reads
   a note when it next works, and `post` says so; `SendMessage` wakes one.
+- **OpenCode**: the sidebar's OpenCode plugin hands an agent its notes with
+  the next prompt and after a tool call, and runs `pm-board guard PATH` before
+  an edit: a path another agent holds is refused once, with the holder's
+  name, and the repeat goes through. `pm-board post --wake` wakes an idle
+  OpenCode addressee with the note. Where an agent's shell cannot reach tmux
+  (a sandbox), the board takes who is calling and who is live from the
+  sidebar's pane map, so keep the state directory on local disk: on NFS the
+  map's lock stalls and a new session is missing from it for a while.
 - **The `board` window** (`pm-board watch`, `prefix B`): messages on the left
   (`h` swaps in the last 7 days), and on the right holds, collisions, who
   needs you, who is on what, and what ended. A collision counts only
