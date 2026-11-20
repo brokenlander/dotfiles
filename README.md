@@ -117,8 +117,13 @@ OneDrive config. Terminals run zsh with the same shared config as Ubuntu
 Manual afterwards:
 - `gh auth login` (git uses `gh` via `~/.gitconfig.local`)
 - Zen: sign into the Mozilla account
-- OneDrive: `onedrive` (log in), then `onedrive --sync --resync`.
-  The config skips only the top-level `Foto` folder (~534 GB).
+- OneDrive: `onedrive` (log in). The config skips only the top-level `Foto`
+  folder (~534 GB), but a full sync still has to LIST every item in the drive
+  first (photos included), which takes hours. So get the working folder first:
+  ```bash
+  onedrive --sync --single-directory 'Struttura' --resync --resync-auth   # minutes
+  onedrive --sync --resync --resync-auth                                  # full, leave overnight
+  ```
 
 ## What's Included
 
