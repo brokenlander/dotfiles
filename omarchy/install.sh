@@ -124,6 +124,10 @@ grep -v '^#' "$DOTFILES/omarchy/wallpapers.txt" | while read -r url; do
 done
 
 # -------- OneDrive --------
+# Files (Nautilus) sidebar: forge and OneDrive
+BM="$HOME/.config/gtk-3.0/bookmarks"; mkdir -p "$(dirname "$BM")"; touch "$BM"
+grep -q "file://$HOME/forge " "$BM" || echo "file://$HOME/forge forge" >> "$BM"
+grep -q "file://$HOME/OneDrive " "$BM" || echo "file://$HOME/OneDrive OneDrive" >> "$BM"
 link onedrive/config "$HOME/.config/onedrive/config"
 
 # -------- Web apps (LAST: installers above, e.g. Tailscale, add their own) --------
