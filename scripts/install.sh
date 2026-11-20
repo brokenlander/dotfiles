@@ -174,6 +174,9 @@ if [ "$HAS_DISPLAY" = true ]; then
         fi
     fi
 
+    # Zen: user.js (prefs carried by Firefox Sync + local fixes)
+    "$DOTFILES/scripts/zen-userjs.sh" || true
+
     # OneDrive (sync dir + skip list; the login token is never in the repo)
     if [ -f "$DOTFILES/onedrive/config" ]; then
         create_symlink "$DOTFILES/onedrive/config" "$HOME/.config/onedrive/config"

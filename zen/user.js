@@ -1,4 +1,4 @@
-// === zen-sync managed block — deployed by scripts/zen-sync.sh, do not edit here ===
+// === zen-sync managed block — installed by scripts/zen-userjs.sh, do not edit here ===
 //
 // This file opts Zen-specific prefs INTO Firefox Sync. It sets only "sync this
 // pref" sentinels and engine switches — never pref *values*. The actual values

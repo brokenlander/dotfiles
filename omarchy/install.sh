@@ -25,6 +25,7 @@ link() {
 # -------- Packages --------
 pacman -Q zen-browser-bin >/dev/null 2>&1 || omarchy install browser zen
 omarchy default browser zen
+"$DOTFILES/scripts/zen-userjs.sh"   # Zen prefs synced via Firefox Sync + local fixes
 pacman -Q onedrive-abraunegg >/dev/null 2>&1 || omarchy pkg aur add onedrive-abraunegg
 pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys / MX Master
 

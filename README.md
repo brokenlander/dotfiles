@@ -219,32 +219,14 @@ Decided one by one on the laptop (Nov 2026). `omarchy/install.sh` applies it.
 | Cooling | Corsair (OpenLinkHub) |
 | Gaming | Steam, MangoHud, Gamemode, ProtonUp-Qt |
 
-## Zen settings sync (multi-machine)
+## Zen
 
-Keeps a Zen setup consistent across machines, in two layers:
-
-- **Layer 1 — Firefox Sync** (your Mozilla account): favorites, spaces, folders,
-  pinned tabs, bookmarks/history/passwords, **and** the appearance/behavior prefs
-  opted in by `zen/user.js`. Sign each machine into the same account — no copying.
-- **Layer 2 — `scripts/zen-sync.sh`**: the bits Firefox Sync can't carry —
-  keyboard shortcuts (`customKeys.json`) and mods (`zen-themes.json` + the mod
-  folders). Mirrored in `zen/profile/` and moved with git.
-
-```bash
-# After changing shortcuts/mods on one machine (close Zen first):
-./scripts/zen-sync.sh push && git add -A zen/ && git commit -m "zen: sync settings" && git push
-# On another machine:
-git pull && ./scripts/zen-sync.sh pull   # also deploys zen/user.js
-```
-
-`zen-sync.sh` finds the active profile automatically via `profiles.ini`, so the
-random profile name doesn't matter. `user.js` is deployed as a managed block and
-sets only *sync sentinels*, never pref values — the values ride Firefox Sync.
-
-> Migrating from the old Windows-partition `sync-zen-settings.sh`: delete any
-> pinned `user_pref("zen.…")` **values** left in your profile's `user.js` (e.g.
-> `zen.workspaces.active`, build-ids) — a pinned value overrides what Firefox
-> Sync sends, and some of that old dump is machine-specific.
+Everything syncs through **Firefox Sync** (sign into the Mozilla account): bookmarks,
+passwords, history, tabs, workspaces and essentials. `zen/user.js` opts Zen's own
+appearance and behaviour prefs into Firefox Sync too (theme/accent, compact mode,
+sidebar, tab behaviour), and sets two local fixes: no default-browser prompt, and no
+password saving (Bitwarden). The installers copy it into the profile with
+`scripts/zen-userjs.sh`. Custom shortcuts and mods are not synced.
 
 ## Structure
 
@@ -268,7 +250,7 @@ dotfiles/
     ├── build-freerdp.sh         # FreeRDP 3 from source with H.264, SDL3 client (desktop; called by install-dependencies)
     ├── install.sh               # Symlinks + configs
     ├── workstation.sh           # Hardware-specific setup
-    ├── sync-zen-settings.sh     # Zen Browser Windows sync
+    ├── zen-userjs.sh            # Zen: install zen/user.js into the profile
     └── uninstall.sh             # Restore original configs
 ```
 
