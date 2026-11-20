@@ -67,4 +67,9 @@ user_pref("services.sync.prefs.sync.zen.mediacontrols.enabled", true);
 //     across different window sizes — comment out if it causes layout churn. ---
 user_pref("services.sync.prefs.sync.browser.uiCustomization.state", true);
 
+// --- Local behavior (a value, not a sync opt-in) ---
+// Omarchy registers its own launcher (omarchy-browser.desktop) as the system
+// default, which then opens Zen; Zen never sees itself as default and nags on
+// every start. Harmless on Ubuntu too.
+user_pref("browser.shell.checkDefaultBrowser", false);
 // === end zen-sync managed block ===
