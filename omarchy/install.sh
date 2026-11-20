@@ -31,6 +31,10 @@ pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys 
 
 # Apps added (see README > Omarchy apps: what stays and what goes)
 omarchy pkg add discord spotify bitwarden obs-studio
+omarchy pkg add lazydocker   # Docker TUI, Super+Shift+D
+# Gaming extras: MangoHud overlay + Gamemode (Steam launch options: gamemoderun mangohud %command%)
+omarchy pkg add mangohud lib32-mangohud gamemode lib32-gamemode
+getent group gamemode >/dev/null && { id -nG "$USER" | grep -qw gamemode || sudo usermod -aG gamemode "$USER"; }
 pacman -Q onlyoffice-bin >/dev/null 2>&1 || omarchy pkg aur add onlyoffice-bin
 pacman -Q steam >/dev/null 2>&1 || omarchy install gaming steam   # also adds the 32-bit GPU libraries
 # Xbox controllers over Bluetooth (xpadneo). Same steps as `omarchy install gaming
