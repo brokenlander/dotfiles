@@ -124,6 +124,9 @@ Manual afterwards:
 - Battery: charges to 80% and only restarts below 50% (longer battery life). For a long
   day unplugged: `echo 100 | sudo tee /sys/class/power_supply/BAT0/charge_control_end_threshold`
   (back to 80 at the next boot).
+- Steam (UI only, once): Settings → Compatibility → turn on **"Enable Steam Play for all
+  other titles"** and pick the latest Proton, so Windows-only games run. Per game, for the
+  overlay and performance mode: Properties → Launch options `gamemoderun mangohud %command%`.
 - Web apps: only WhatsApp is kept. Some Omarchy installers add one back
   (Tailscale adds its admin page); run `~/dotfiles/omarchy/remove-webapps.sh` afterwards.
 - OneDrive: `onedrive` (log in). The config skips only the top-level `Foto`
