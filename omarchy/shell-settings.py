@@ -81,6 +81,10 @@ _, _, tray = find("omarchy.tray")
 hidden = tray.setdefault("hidden", [])
 if "indicator-solaar" not in hidden:
     hidden.append("indicator-solaar")
+# Pinned tray icons sit in the bar instead of the fold-out drawer.
+pinned_tray = tray.setdefault("pinned", [])
+if "superwhisper" not in pinned_tray:
+    pinned_tray.append("superwhisper")
 
 # Weather in °C and km/h (the en_US locale would otherwise pick °F).
 ensure("omarchy.weather", "centerEnd", unit="metric")
