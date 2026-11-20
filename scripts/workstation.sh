@@ -77,6 +77,22 @@ kwriteconfig6 --file kwalletrc --group Wallet --key "First Use" --type bool fals
 killall -q kwalletd6 kwalletd5 kwalletd 2>/dev/null || true
 echo -e "${GREEN}KDE Wallet disabled.${NC}"
 
+# ========== Sunshine (game / desktop streaming host) ==========
+# The laptop connects with Moonlight (also over Tailscale). Configure at https://localhost:47990
+echo "=== Sunshine ==="
+if ! dpkg -l sunshine 2>/dev/null | grep -q "^ii"; then
+    SUNSHINE_URL=$(curl -s https://api.github.com/repos/LizardByte/Sunshine/releases/latest \
+        | grep -Po '"browser_download_url": *"\K[^"]+' | grep -E 'ubuntu-26\.04-amd64\.deb$' | head -1)
+    [ -z "$SUNSHINE_URL" ] && SUNSHINE_URL=$(curl -s https://api.github.com/repos/LizardByte/Sunshine/releases/latest \
+        | grep -Po '"browser_download_url": *"\K[^"]+' | grep -E 'ubuntu-24\.04-amd64\.deb$' | head -1)
+    if [ -n "$SUNSHINE_URL" ]; then
+        wget -qO /tmp/sunshine.deb "$SUNSHINE_URL" && sudo apt-get install -y /tmp/sunshine.deb && rm -f /tmp/sunshine.deb
+        systemctl --user enable --now sunshine 2>/dev/null || true
+    else
+        echo "WARNING: no Sunshine .deb found for this Ubuntu release. Skipping."
+    fi
+fi
+
 # ========== OpenLinkHub (Corsair cooling) ==========
 echo "=== OpenLinkHub ==="
 if command -v OpenLinkHub &>/dev/null || dpkg -l openlinkhub 2>/dev/null | command grep -q "^ii"; then

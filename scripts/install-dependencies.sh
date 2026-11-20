@@ -49,7 +49,7 @@ if [ "$HAS_DISPLAY" = true ]; then
     # ubuntu-restricted-extras pulls ttf-mscorefonts-installer, which otherwise
     # hangs forever on an interactive EULA dialog. Pre-accept it.
     echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections
-    sudo apt-get install -y foot keepassxc haruna ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio xdotool librsvg2-bin
+    sudo apt-get install -y foot pinta haruna ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio xdotool librsvg2-bin
 
     # RDP + Teams AV client (brokenlander/teams-av-setup): Opus for pmclient,
     # GStreamer with x264enc for the webcam stream. The RDP client itself is
@@ -291,7 +291,7 @@ else
     fi
 fi
 
-# Desktop-only: OnlyOffice, Vesktop, Fonts, KDE settings
+# Desktop-only: OnlyOffice, Spotify, Discord, Bitwarden, Obsidian, LocalSend, Fonts, KDE settings
 if [ "$HAS_DISPLAY" = true ]; then
     echo "=== Installing OnlyOffice ==="
     mkdir -p -m 700 ~/.gnupg
@@ -316,15 +316,24 @@ if [ "$HAS_DISPLAY" = true ]; then
         sudo apt-get install -y spotify-client
     fi
 
-    echo "=== Installing Vesktop ==="
-    VESKTOP_VERSION=$(curl -s "https://api.github.com/repos/Vencord/Vesktop/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
-    if [ -z "$VESKTOP_VERSION" ]; then
-        echo "WARNING: Failed to fetch Vesktop version. Skipping."
-    else
-        wget -O /tmp/vesktop.deb "https://github.com/Vencord/Vesktop/releases/download/v${VESKTOP_VERSION}/vesktop_${VESKTOP_VERSION}_amd64.deb"
-        sudo dpkg -i /tmp/vesktop.deb
-        sudo apt-get install -f -y
-    fi
+    # .deb packages straight from the vendor / GitHub releases (same apps as on Omarchy)
+    install_deb() {  # install_deb <name> <url>
+        echo "=== Installing $1 ==="
+        if [ -z "$2" ]; then echo "WARNING: no download URL for $1. Skipping."; return; fi
+        wget -qO "/tmp/$1.deb" "$2" && sudo apt-get install -y "/tmp/$1.deb" && rm -f "/tmp/$1.deb"
+    }
+    gh_deb() {  # gh_deb <owner/repo> <asset regex>: URL of the newest matching release asset
+        curl -s "https://api.github.com/repos/$1/releases/latest" \
+            | grep -Po '"browser_download_url": *"\K[^"]+' | grep -E "$2" | head -1
+    }
+    # Discord: the official app (Wayland screen share + push-to-talk work); replaces Vesktop
+    dpkg -l discord 2>/dev/null | grep -q "^ii" || install_deb discord "https://discord.com/api/download?platform=linux&format=deb"
+    # Bitwarden: password manager (replaces KeePassXC)
+    dpkg -l bitwarden 2>/dev/null | grep -q "^ii" || install_deb bitwarden "https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=deb"
+    # Obsidian: notes (vault in ~/OneDrive/Documents/Notes)
+    dpkg -l obsidian 2>/dev/null | grep -q "^ii" || install_deb obsidian "$(gh_deb obsidianmd/obsidian-releases '_amd64\.deb$')"
+    # LocalSend: AirDrop-style file sharing
+    dpkg -l localsend 2>/dev/null | grep -q "^ii" || install_deb localsend "$(gh_deb localsend/localsend 'linux-x86-64\.deb$')"
 
     echo "=== Installing JetBrains Mono Nerd Font ==="
     mkdir -p ~/.local/share/fonts

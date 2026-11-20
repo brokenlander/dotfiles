@@ -72,4 +72,7 @@ user_pref("services.sync.prefs.sync.browser.uiCustomization.state", true);
 // default, which then opens Zen; Zen never sees itself as default and nags on
 // every start. Harmless on Ubuntu too.
 user_pref("browser.shell.checkDefaultBrowser", false);
+// Passwords live in Bitwarden (extension), so Zen stops offering to save them.
+// Already saved logins stay until removed by hand after importing them.
+user_pref("signon.rememberSignons", false);
 // === end zen-sync managed block ===

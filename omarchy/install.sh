@@ -28,6 +28,15 @@ omarchy default browser zen
 pacman -Q onedrive-abraunegg >/dev/null 2>&1 || omarchy pkg aur add onedrive-abraunegg
 pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys / MX Master
 
+# Apps added (see README > Omarchy apps: what stays and what goes)
+omarchy pkg add discord spotify bitwarden obs-studio
+pacman -Q onlyoffice-bin >/dev/null 2>&1 || omarchy pkg aur add onlyoffice-bin
+
+# Omarchy apps removed. OWE plays the login intro video, so the intro goes off first.
+omarchy theme bg intro disable >/dev/null 2>&1 || true
+omarchy pkg drop libreoffice-fresh aether cliamp hype monologue omacut omawrite ttfx owe \
+  fcitx5-chewing fcitx5-chinese-addons fcitx5-hangul fcitx5-mozc fcitx5-table-extra asdcontrol
+
 # Tailscale (asks you to log in through a link the first time)
 pacman -Q tailscale >/dev/null 2>&1 || omarchy install service tailscale
 

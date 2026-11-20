@@ -44,6 +44,14 @@ for _, key in ipairs({
   hl.unbind(key)
 end
 
+-- Apps removed in the package unbloat (or never wanted): drop their keys.
+hl.unbind("SUPER + SHIFT + G")        -- Signal
+hl.unbind("SUPER + SHIFT + ALT + M")  -- cliamp (Music TUI)
+hl.unbind("SUPER + SHIFT + W")        -- Omawrite
+
+-- Passwords: Bitwarden instead of 1Password (same key as Omarchy's default).
+o.rebind("SUPER + SHIFT + SLASH", "Passwords", { launch = "bitwarden" })
+
 -- Alt+\ (key left of 1 on the Italian keyboard) types ~ in every app.
 -- The Italian layout has no easy tilde (only AltGr+ì). Send exactly AltGr+ì
 -- (MOD5 + key code 21) to the focused window, so the held Alt never leaks into

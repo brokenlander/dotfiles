@@ -103,7 +103,7 @@ ensure("omarchy.weather", "centerEnd", unit="metric")
 pinned = cfg.setdefault("dock", {}).setdefault("pinned", [])
 cfg["dock"]["pinned"] = ["zen" if p == "chromium" else p for p in pinned]
 # Web apps removed (only WhatsApp kept), so their pins go too.
-cfg["dock"]["pinned"] = [p for p in cfg["dock"]["pinned"] if p not in ("X", "YouTube")]
+cfg["dock"]["pinned"] = [p for p in cfg["dock"]["pinned"] if p not in ("X", "YouTube", "omawrite")]
 if "zen" not in cfg["dock"]["pinned"]:
     cfg["dock"]["pinned"].insert(1, "zen")
 

@@ -125,6 +125,48 @@ Manual afterwards:
   onedrive --sync --resync --resync-auth                                  # full, leave overnight
   ```
 
+### Omarchy apps: what stays and what goes
+
+Decided one by one on the laptop (Nov 2026). `omarchy/install.sh` applies it.
+
+**Kept**
+- **Obsidian**: Markdown notes; vault in `~/OneDrive/Documents/Notes` (also on Ubuntu)
+- **Pinta**: simple image editor, handy now and then (also on Ubuntu)
+- **LocalSend**: AirDrop-style file sharing with the phone (also on Ubuntu)
+- **Evince**: PDF viewer
+- **Signed**: sign and fill in PDFs
+- **Disks** (gnome-disk-utility): format USB sticks, check drives
+- **Sushi**: Space-bar file preview in Files
+- **Moonlight**: game / desktop streaming client; Sunshine is the host on the workstation
+- **Disk Tree**: disk usage map
+- **Gliff**: Hyprland-to-Hyprland remote desktop over SSH (for an Omarchy workstation)
+- **Omasnap**: screenshots + annotation (the Print key)
+- **Omacalc**: calculator
+- **Docker** (+ compose, buildx, ufw-docker): containers, as on Ubuntu
+- **MariaDB / PostgreSQL client libraries, python-poetry-core**: small build dependencies; removing them only causes confusing build errors later
+- **amd-ucode**: does nothing on this Intel laptop, kept so the setup works on AMD machines too
+- **tzupdate**: set the timezone from location when travelling
+- **vi**: tiny fallback editor for system tools and recovery (`vi`/`vim` open nvim anyway)
+- **OCR + QR tools** (tesseract, zbar, qrencode): copy text from the screen, scan/show QR codes
+- **WhatsApp** web app: the only web app kept (no native Linux app)
+
+**Removed**
+- **LibreOffice**: replaced by OnlyOffice (better with Office files, looks better; same as Ubuntu)
+- **Aether**: theme maker; settled on Ristretto
+- **cliamp**: terminal music player; mpv plays music and shows in the bar's media widget
+- **Hype**: Markdown slide presentations; not needed
+- **Monologue**: webcam recorder; calls and the screen recorder cover it
+- **Omacut**: video trimmer; an agent can trim with ffmpeg
+- **Omawrite**: Markdown writing app; Obsidian covers it
+- **ttfx**: screensaver text effects; the screensaver is off
+- **OWE**: video wallpaper engine; no video wallpapers, login intro turned off
+- **Asian input methods** (Chinese, Japanese, Korean fcitx5 engines): not needed; fcitx5 itself stays
+- **asdcontrol**: brightness for Apple displays; none here
+- **All other web apps** (X, YouTube, Basecamp, HEY, Zoom, Discord, Google Maps/Contacts/Messages/Photos) and their shortcuts, plus the Signal, cliamp and Omawrite keys
+
+**Added**
+- **OnlyOffice**, **Discord** (official app, replaces Vesktop on Ubuntu), **Spotify**, **Bitwarden** (replaces KeePassXC and Zen's saved passwords; `Super+Shift+/`), **OBS Studio**
+
 ## What's Included
 
 ### Server (any Linux box)
