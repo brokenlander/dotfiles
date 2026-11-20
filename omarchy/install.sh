@@ -28,6 +28,9 @@ omarchy default browser zen
 pacman -Q onedrive-abraunegg >/dev/null 2>&1 || omarchy pkg aur add onedrive-abraunegg
 pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys / MX Master
 
+# Tailscale (asks you to log in through a link the first time)
+pacman -Q tailscale >/dev/null 2>&1 || omarchy install service tailscale
+
 # -------- Shell --------
 mkdir -p "$HOME/forge"
 if ! grep -q 'dotfiles/shell/aliases.sh' "$HOME/.bashrc"; then
@@ -67,14 +70,12 @@ link omarchy/hypr/looknfeel.lua "$HOME/.config/hypr/looknfeel.lua"
 link omarchy/hypr/input.lua "$HOME/.config/hypr/input.lua"   # natural touchpad scrolling
 link omarchy/hypr/bindings.lua "$HOME/.config/hypr/bindings.lua"   # Alt+\ types ~
 
+# -------- Bar, dock, idle (shell.json) --------
+# Bar: no keyboard-layout widget; mic, media and Tailscale added; world clocks.
+# Dock: Zen instead of Chromium. Idle: no screensaver, no auto-lock.
+python3 -I "$DOTFILES/omarchy/shell-settings.py"
+
 # -------- Idle: screen off after 5 min, never auto-lock --------
-python3 -I - <<'PYJ'
-import json, pathlib
-p = pathlib.Path.home()/".config/omarchy/shell.json"
-d = json.loads(p.read_text()) if p.exists() else {}
-d["idle"] = {"screensaver": 0, "lock": 0}
-p.write_text(json.dumps(d, indent=2) + "\n")
-PYJ
 pacman -Q hypridle >/dev/null 2>&1 || omarchy pkg add hypridle
 link omarchy/hypr/hypridle.conf "$HOME/.config/hypr/hypridle.conf"
 systemctl --user enable --now hypridle.service
