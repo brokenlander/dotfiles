@@ -74,6 +74,9 @@ ensure(
     ],
 )
 
+# Weather in °C and km/h (the en_US locale would otherwise pick °F).
+ensure("omarchy.weather", "centerEnd", unit="metric")
+
 # Dock: Zen is the browser (Chromium stays only as the web-app engine).
 pinned = cfg.setdefault("dock", {}).setdefault("pinned", [])
 cfg["dock"]["pinned"] = ["zen" if p == "chromium" else p for p in pinned]
