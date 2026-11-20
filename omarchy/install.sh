@@ -31,6 +31,12 @@ pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys 
 # Tailscale (asks you to log in through a link the first time)
 pacman -Q tailscale >/dev/null 2>&1 || omarchy install service tailscale
 
+# Web apps: only WhatsApp (no native Linux app). Everything else opens in Zen.
+for w in "X" "YouTube" "Basecamp" "HEY" "Zoom" "Discord" "Google Maps" "Google Contacts" \
+         "Google Messages" "Google Photos" "Tailscale"; do
+  [ -f "$HOME/.local/share/applications/$w.desktop" ] && omarchy webapp remove "$w" >/dev/null 2>&1 || true
+done
+
 # -------- Shell --------
 mkdir -p "$HOME/forge"
 if ! grep -q 'dotfiles/shell/aliases.sh' "$HOME/.bashrc"; then

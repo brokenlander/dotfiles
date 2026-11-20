@@ -26,6 +26,24 @@
 -- o.bind("SUPER + H", nil, "voxtype record toggle")
 -- o.bind("SUPER + PERIOD", nil, { panel = "omarchy.emojis" })
 
+-- Web-app shortcuts for sites I don't use as web apps (only WhatsApp is kept,
+-- Super+Shift+Alt+G). The sites still open normally in Zen.
+for _, key in ipairs({
+  "SUPER + SHIFT + A",        -- ChatGPT
+  "SUPER + SHIFT + ALT + A",  -- Grok
+  "SUPER + SHIFT + C",        -- HEY Calendar
+  "SUPER + SHIFT + E",        -- HEY Email
+  "SUPER + SHIFT + ALT + E",  -- HEY New email
+  "SUPER + SHIFT + Y",        -- YouTube
+  "SUPER + SHIFT + CTRL + G", -- Google Messages
+  "SUPER + SHIFT + P",        -- Google Photos
+  "SUPER + SHIFT + S",        -- Google Maps
+  "SUPER + SHIFT + X",        -- X
+  "SUPER + SHIFT + ALT + X",  -- X Post
+}) do
+  hl.unbind(key)
+end
+
 -- Alt+\ (key left of 1 on the Italian keyboard) types ~ in every app.
 -- The Italian layout has no easy tilde (only AltGr+ì). Send exactly AltGr+ì
 -- (MOD5 + key code 21) to the focused window, so the held Alt never leaks into
