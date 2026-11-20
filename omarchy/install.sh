@@ -34,6 +34,10 @@ if ! grep -q 'dotfiles/shell/aliases.sh' "$HOME/.bashrc"; then
   printf '\n# Shared aliases from dotfiles\n[ -f ~/dotfiles/shell/aliases.sh ] && . ~/dotfiles/shell/aliases.sh\n' >> "$HOME/.bashrc"
   echo -e "${GREEN}Added${NC} aliases to ~/.bashrc"
 fi
+if ! grep -q 'dotfiles/shell/env.sh' "$HOME/.bashrc"; then
+  printf '[ -f ~/dotfiles/shell/env.sh ] && . ~/dotfiles/shell/env.sh\n' >> "$HOME/.bashrc"
+  echo -e "${GREEN}Added${NC} shell env to ~/.bashrc"
+fi
 
 # -------- Terminal + prompt --------
 link foot/foot.ini "$HOME/.config/foot/foot.ini"
