@@ -86,6 +86,16 @@ pinned_tray = tray.setdefault("pinned", [])
 if "superwhisper" not in pinned_tray:
     pinned_tray.append("superwhisper")
 
+# Widgets in the "tray" section live inside the fold-out drawer (behind the
+# arrow). Move them onto the bar itself, right of the tray, so nothing is
+# folded away.
+for item in list(layout.get("tray", [])):
+    layout["tray"].remove(item)
+    right = section("right")
+    if not any(it.get("id") == item.get("id") for it in right):
+        idx = next((i for i, it in enumerate(right) if it.get("id") == "omarchy.tray"), -1)
+        right.insert(idx + 1, item)
+
 # Weather in °C and km/h (the en_US locale would otherwise pick °F).
 ensure("omarchy.weather", "centerEnd", unit="metric")
 
