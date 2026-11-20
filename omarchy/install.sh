@@ -26,6 +26,7 @@ link() {
 pacman -Q zen-browser-bin >/dev/null 2>&1 || omarchy install browser zen
 omarchy default browser zen
 pacman -Q onedrive-abraunegg >/dev/null 2>&1 || omarchy pkg aur add onedrive-abraunegg
+pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys / MX Master
 
 # -------- Shell --------
 mkdir -p "$HOME/forge"
@@ -54,6 +55,7 @@ link nvim/lua/plugins/dashboard.lua "$HOME/.config/nvim/lua/plugins/dashboard.lu
 
 # -------- Hyprland --------
 link omarchy/hypr/looknfeel.lua "$HOME/.config/hypr/looknfeel.lua"
+link omarchy/hypr/input.lua "$HOME/.config/hypr/input.lua"   # natural touchpad scrolling
 
 # -------- Idle: screen off after 5 min, never auto-lock --------
 python3 -I - <<'PYJ'
