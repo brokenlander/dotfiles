@@ -175,7 +175,7 @@ Decided one by one on the laptop (Nov 2026). `omarchy/install.sh` applies it.
 - **All other web apps** (X, YouTube, Basecamp, HEY, Zoom, Discord, Google Maps/Contacts/Messages/Photos) and their shortcuts, plus the Signal, cliamp and Omawrite keys
 
 **Added**
-- **OnlyOffice**, **Discord** (official app, replaces Vesktop on Ubuntu), **Spotify**, **Bitwarden** (replaces KeePassXC and Zen's saved passwords; `Super+Shift+/`), **OBS Studio**
+- **OnlyOffice**, **Discord** (official app, replaces Vesktop on Ubuntu), **Spotify**, **Bitwarden** (replaces KeePassXC and Zen's saved passwords; `Super+Shift+/`), **OBS Studio**, **Steam** (Omarchy's gaming installer, with 32-bit GPU libraries)
 
 ## What's Included
 

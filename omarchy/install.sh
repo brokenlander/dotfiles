@@ -32,6 +32,7 @@ pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys 
 # Apps added (see README > Omarchy apps: what stays and what goes)
 omarchy pkg add discord spotify bitwarden obs-studio
 pacman -Q onlyoffice-bin >/dev/null 2>&1 || omarchy pkg aur add onlyoffice-bin
+pacman -Q steam >/dev/null 2>&1 || omarchy install gaming steam   # also adds the 32-bit GPU libraries
 
 # Omarchy apps removed. OWE plays the login intro video, so the intro goes off first.
 omarchy theme bg intro disable >/dev/null 2>&1 || true
