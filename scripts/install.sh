@@ -139,16 +139,25 @@ fi
 # -------- Git Configuration --------
 echo "Setting up Git configuration..."
 
-if [ -f "$DOTFILES/git/.gitconfig" ]; then
-    create_symlink "$DOTFILES/git/.gitconfig" "$HOME/.gitconfig"
-else
-    echo -e "${RED}Error:${NC} $DOTFILES/git/.gitconfig not found!"
+# Shared config lives in ~/.config/git/ (same on Omarchy and Ubuntu).
+for f in config ignore work.gitconfig; do
+    create_symlink "$DOTFILES/git/$f" "$HOME/.config/git/$f"
+done
+# Old layout: ~/.gitconfig / ~/.gitignore_global would be read on top of it.
+for old in "$HOME/.gitconfig" "$HOME/.gitignore_global"; do
+    if [ -L "$old" ] || [ -f "$old" ]; then
+        backup_file "$old"; rm -f "$old"
+        echo -e "${YELLOW}Removed${NC} $old (now ~/.config/git/)"
+    fi
+done
+# Machine-only settings (credentials). Ubuntu keeps the plaintext store
+# helper because KDE Wallet is disabled there; see scripts/reauth.sh.
+if [ ! -f "$HOME/.gitconfig.local" ]; then
+    printf '[credential "https://github.com"]\n\thelper =\n\thelper = store\n[credential "https://gist.github.com"]\n\thelper =\n\thelper = store\n' > "$HOME/.gitconfig.local"
+    echo -e "${GREEN}Created${NC} ~/.gitconfig.local (store credential helper)"
 fi
-
-if [ -f "$DOTFILES/git/.gitignore_global" ]; then
-    create_symlink "$DOTFILES/git/.gitignore_global" "$HOME/.gitignore_global"
-else
-    echo -e "${RED}Error:${NC} $DOTFILES/git/.gitignore_global not found!"
+if git config -f "$HOME/.gitconfig.local" --get-regexp '^user\.' >/dev/null 2>&1; then
+    echo -e "${YELLOW}Warning:${NC} ~/.gitconfig.local sets user.* and overrides the per-remote identity switch"
 fi
 
 # Git hooks (global — referenced by .gitconfig hooksPath)
@@ -209,6 +218,11 @@ if [ "$HAS_DISPLAY" = true ]; then
         else
             create_symlink "$DOTFILES/foot/theme-ubuntu.ini" "$HOME/.config/foot/theme.ini"
         fi
+    fi
+
+    # OneDrive (sync dir + skip list; the login token is never in the repo)
+    if [ -f "$DOTFILES/onedrive/config" ]; then
+        create_symlink "$DOTFILES/onedrive/config" "$HOME/.config/onedrive/config"
     fi
 
     # Kate Tokyo Night theme

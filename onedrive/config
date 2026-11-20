@@ -1,0 +1,5 @@
+# Per-machine OneDrive config (not in the dotfiles repo).
+sync_dir = "~/OneDrive"
+# Skip only the top-level Foto folder (~534 GB of photos).
+skip_dir = "Foto"
+skip_dir_strict_match = "true"

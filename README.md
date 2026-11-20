@@ -98,6 +98,28 @@ first sync appear to hang. Two lessons:
 
 ---
 
+## Omarchy (laptop)
+
+Same repo, same shared configs; `omarchy/install.sh` replaces steps 2–3.
+
+```bash
+git clone https://github.com/brokenlander/dotfiles.git ~/dotfiles
+~/dotfiles/scripts/pre-install.sh   # passwordless sudo + ~/forge
+~/dotfiles/omarchy/install.sh       # theme, packages, symlinks (safe to re-run)
+```
+
+It sets the Ristretto theme, installs Zen (default browser) and the OneDrive
+client, and links: foot, starship, git (`~/.config/git/`), shared aliases
+(sourced from `~/.bashrc`), the nvim start page, Hyprland look'n'feel, and the
+OneDrive config. Shell is Omarchy's bash; Ubuntu keeps zsh with the same
+aliases.
+
+Manual afterwards:
+- `gh auth login` (git uses `gh` via `~/.gitconfig.local`)
+- Zen: sign into the Mozilla account
+- OneDrive: `onedrive` (log in), then `onedrive --sync --resync`.
+  The config skips only the top-level `Foto` folder (~534 GB).
+
 ## What's Included
 
 ### Server (any Linux box)

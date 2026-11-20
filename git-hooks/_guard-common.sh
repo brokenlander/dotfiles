@@ -35,6 +35,16 @@ guard_remote_kind() {
   esac
 }
 
+# guard_content_exempt <repo-dir>: true for the dotfiles repo, whose files must
+# name AI tools (CLI aliases, ignore rules). Only the staged-CONTENT vendor scan
+# honours this; commit messages, identities and pushes stay fully guarded.
+guard_content_exempt() {
+  case "$(git -C "${1:-.}" remote get-url origin 2>/dev/null)" in
+    *brokenlander/dotfiles|*brokenlander/dotfiles.git) return 0 ;;
+  esac
+  return 1
+}
+
 # guard_bad_identity <email> <kind> -> prints a reason, or nothing if fine
 guard_bad_identity() {
   local e="$1" kind="$2"

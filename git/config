@@ -1,0 +1,68 @@
+# Shared git config (Omarchy laptop + Ubuntu workstation).
+# Machine-only settings (credentials) live in ~/.gitconfig.local, included last.
+
+[user]
+	name = brokenlander
+	email = andrea.moccia@gmail.com
+
+# Work remotes switch to the corporate identity automatically.
+[includeIf "hasconfig:remote.*.url:https://**/options-it*/**"]
+	path = ~/.config/git/work.gitconfig
+[includeIf "hasconfig:remote.*.url:git@*:options-it*/**"]
+	path = ~/.config/git/work.gitconfig
+[includeIf "hasconfig:remote.*.url:https://**/options-privatemind*/**"]
+	path = ~/.config/git/work.gitconfig
+[includeIf "hasconfig:remote.*.url:git@*:options-privatemind*/**"]
+	path = ~/.config/git/work.gitconfig
+
+[core]
+	editor = nvim
+	hooksPath = ~/.git-hooks/
+
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[rebase]
+	autoStash = true
+[push]
+	autoSetupRemote = true
+[merge]
+	conflictStyle = zdiff3
+[diff]
+	algorithm = histogram
+	colorMoved = plain
+	mnemonicPrefix = true
+[commit]
+	verbose = true
+[column]
+	ui = auto
+[branch]
+	sort = -committerdate
+[tag]
+	sort = -version:refname
+[rerere]
+	enabled = true
+	autoupdate = true
+
+# delta: enable as pager once git-delta is installed (core.pager = delta,
+# interactive.diffFilter = delta --color-only).
+[delta]
+	navigate = true
+	side-by-side = true
+	line-numbers = true
+	syntax-theme = ansi
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	ci = commit
+	sw = switch
+	amend = commit --amend
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+
+[include]
+	path = ~/.gitconfig.local

@@ -1,0 +1,33 @@
+# Global gitignore: machine and editor junk only.
+# Project-specific rules belong in each repo's own .gitignore.
+
+# AI agent config stays out of every repo
+.claude/
+CLAUDE.md
+claude.md
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+.directory
+.Trash-*
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Environments and secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+node_modules/
+__pycache__/

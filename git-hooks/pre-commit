@@ -34,7 +34,10 @@ if [ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]; then
 else
   ADDED=$(git diff --cached --diff-filter=ACM -U0 | grep -E "^\+" | grep -v "^+++")
 fi
-MATCHES=$(printf '%s\n' "$ADDED" | grep -iE "$ALL_PATTERNS" || true)
+# The dotfiles repo may name AI tools in its files; the banned identity never.
+PATTERNS="$ALL_PATTERNS"
+guard_content_exempt "$(git rev-parse --show-toplevel)" && PATTERNS="$NEVER"
+MATCHES=$(printf '%s\n' "$ADDED" | grep -iE "$PATTERNS" || true)
 if [ -n "$MATCHES" ]; then
   guard_die "Staged changes contain forbidden patterns:" "$MATCHES" \
     "If the vendor name is legitimate data, phrase it neutrally."
