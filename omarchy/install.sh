@@ -33,6 +33,16 @@ pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys 
 omarchy pkg add discord spotify bitwarden obs-studio
 pacman -Q onlyoffice-bin >/dev/null 2>&1 || omarchy pkg aur add onlyoffice-bin
 pacman -Q steam >/dev/null 2>&1 || omarchy install gaming steam   # also adds the 32-bit GPU libraries
+# Xbox controllers over Bluetooth (xpadneo). Same steps as `omarchy install gaming
+# xbox-controllers`, minus its reboot prompt: the input group applies at next login.
+if ! pacman -Q xpadneo-dkms >/dev/null 2>&1; then
+  omarchy pkg add xpadneo-dkms
+  echo blacklist xpad | sudo tee /etc/modprobe.d/blacklist-xpad.conf >/dev/null
+  echo hid_xpadneo | sudo tee /etc/modules-load.d/xpadneo.conf >/dev/null
+  id -nG "$USER" | grep -qw input || sudo usermod -aG input "$USER"
+  sudo modprobe -r xpad 2>/dev/null || true
+  sudo modprobe hid_xpadneo || true
+fi
 
 # Omarchy apps removed. OWE plays the login intro video, so the intro goes off first.
 omarchy theme bg intro disable >/dev/null 2>&1 || true
