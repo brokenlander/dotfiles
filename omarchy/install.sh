@@ -32,6 +32,9 @@ pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys 
 # Apps added (see README > Omarchy apps: what stays and what goes)
 omarchy pkg add discord spotify bitwarden obs-studio
 omarchy pkg add lazydocker   # Docker TUI, Super+Shift+D
+# Sudoless Docker (docker group), like the workstation. Omarchy warns it equals
+# passwordless root; this setup already has passwordless sudo, so no extra exposure.
+id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"
 # Gaming extras: MangoHud overlay + Gamemode (Steam launch options: gamemoderun mangohud %command%)
 omarchy pkg add mangohud lib32-mangohud gamemode lib32-gamemode
 getent group gamemode >/dev/null && { id -nG "$USER" | grep -qw gamemode || sudo usermod -aG gamemode "$USER"; }
