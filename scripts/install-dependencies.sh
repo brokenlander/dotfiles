@@ -49,7 +49,7 @@ if [ "$HAS_DISPLAY" = true ]; then
     # ubuntu-restricted-extras pulls ttf-mscorefonts-installer, which otherwise
     # hangs forever on an interactive EULA dialog. Pre-accept it.
     echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections
-    sudo apt-get install -y kitty keepassxc haruna ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio xdotool librsvg2-bin
+    sudo apt-get install -y foot keepassxc haruna ubuntu-restricted-extras timeshift solaar papirus-icon-theme bibata-cursor-theme onedrive obs-studio xdotool librsvg2-bin
 
     # RDP + Teams AV client (brokenlander/teams-av-setup): Opus for pmclient,
     # GStreamer with x264enc for the webcam stream. The RDP client itself is

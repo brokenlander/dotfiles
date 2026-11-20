@@ -4,25 +4,25 @@ Personal configuration for Linux (Ubuntu/Debian). Three tiers: server (any box),
 
 ## Fresh Install
 
-### 1. Pre-install (manual)
+### 1. Pre-install
 
-Do a **minimal install** of Kubuntu, then enable passwordless sudo:
+Do a **minimal install** of Kubuntu (or a fresh Omarchy), then clone and run the pre-install (passwordless sudo, `~/forge`):
 
 ```bash
-sudo bash -c 'echo "brokenlander ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/brokenlander && chmod 440 /etc/sudoers.d/brokenlander'
+git clone https://github.com/brokenlander/dotfiles.git ~/dotfiles
+~/dotfiles/scripts/pre-install.sh   # passwordless sudo + ~/forge
 ```
 
 ### 2. Server + Desktop
 
 ```bash
-git clone https://github.com/brokenlander/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ./scripts/install-dependencies.sh
 # restart shell
 ./scripts/install.sh
 ```
 
-This installs and configures everything portable: CLI tools, ZSH, Neovim, Tmux, Docker, Git, Starship, Kitty, Kate, KDE settings, fonts, Zen Browser, Vesktop, OnlyOffice, Spotify, Steam, Krohnkite, and more. Desktop packages are auto-skipped on headless servers.
+This installs and configures everything portable: CLI tools, ZSH, Neovim, Tmux, Docker, Git, Starship, foot, Kate, KDE settings, fonts, Zen Browser, Vesktop, OnlyOffice, Spotify, Steam, Krohnkite, and more. Desktop packages are auto-skipped on headless servers.
 
 ### 3. Workstation (this machine only)
 
@@ -117,7 +117,7 @@ first sync appear to hang. Two lessons:
 
 | Tool | Purpose |
 |------|---------|
-| Kitty | GPU-accelerated terminal (Tokyo Night) |
+| foot | Fast Wayland terminal (Ristretto; right-click paste, copy on select) |
 | Kate | Text editor (Tokyo Night theme) |
 | KDE | Breeze Dark, Papirus-Dark icons, Bibata-Modern-Ice cursor |
 | Krohnkite | Dynamic tiling for KWin |
@@ -176,7 +176,7 @@ dotfiles/
 ├── tmux/           # Tmux config + Tokyo Night theme
 ├── git/            # .gitconfig + .gitignore_global
 ├── git-hooks/      # Global git hooks (block AI references in commits)
-├── kitty/          # Kitty terminal config
+├── foot/           # foot terminal config (shared) + Ubuntu theme
 ├── kate/           # Kate editor theme
 ├── starship/       # Starship prompt config
 ├── btop/           # System monitor config + theme

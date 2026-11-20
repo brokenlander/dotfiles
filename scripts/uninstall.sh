@@ -66,10 +66,10 @@ if [ -L "$HOME/.config/nvim" ]; then
     fi
 fi
 
-# Remove Kitty configuration symlink
-if [ -L "$HOME/.config/kitty/kitty.conf" ]; then
-    rm "$HOME/.config/kitty/kitty.conf"
-    echo -e "${YELLOW}Removed${NC} Kitty config symlink"
+# Remove foot configuration symlinks
+if [ -L "$HOME/.config/foot/foot.ini" ]; then
+    rm -f "$HOME/.config/foot/foot.ini" "$HOME/.config/foot/theme.ini"
+    echo -e "${YELLOW}Removed${NC} foot config symlinks"
 fi
 
 # Remove Kate theme symlink

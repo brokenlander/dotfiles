@@ -196,13 +196,19 @@ else
     echo -e "${RED}Error:${NC} $DOTFILES/nvim directory not found!"
 fi
 
-# -------- Desktop-only: Kitty & Kate --------
+# -------- Desktop-only: foot & Kate --------
 if [ "$HAS_DISPLAY" = true ]; then
     echo "Setting up desktop configurations..."
 
-    # Kitty
-    if [ -f "$DOTFILES/kitty/kitty.conf" ]; then
-        create_symlink "$DOTFILES/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
+    # foot (shared config; colors from a per-machine theme.ini)
+    if [ -f "$DOTFILES/foot/foot.ini" ]; then
+        mkdir -p "$HOME/.config/foot"
+        create_symlink "$DOTFILES/foot/foot.ini" "$HOME/.config/foot/foot.ini"
+        if [ -d "$HOME/.local/state/omarchy" ]; then
+            ln -sfn "$HOME/.local/state/omarchy/current/theme/foot.ini" "$HOME/.config/foot/theme.ini"
+        else
+            create_symlink "$DOTFILES/foot/theme-ubuntu.ini" "$HOME/.config/foot/theme.ini"
+        fi
     fi
 
     # Kate Tokyo Night theme
