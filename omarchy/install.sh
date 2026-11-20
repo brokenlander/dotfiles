@@ -55,6 +55,25 @@ link nvim/lua/plugins/dashboard.lua "$HOME/.config/nvim/lua/plugins/dashboard.lu
 # -------- Hyprland --------
 link omarchy/hypr/looknfeel.lua "$HOME/.config/hypr/looknfeel.lua"
 
+# -------- Idle: screen off after 5 min, never auto-lock --------
+python3 -I - <<'PYJ'
+import json, pathlib
+p = pathlib.Path.home()/".config/omarchy/shell.json"
+d = json.loads(p.read_text()) if p.exists() else {}
+d["idle"] = {"screensaver": 0, "lock": 0}
+p.write_text(json.dumps(d, indent=2) + "\n")
+PYJ
+pacman -Q hypridle >/dev/null 2>&1 || omarchy pkg add hypridle
+link omarchy/hypr/hypridle.conf "$HOME/.config/hypr/hypridle.conf"
+systemctl --user enable --now hypridle.service
+systemctl --user mask --now omarchy-sleep-lock.service   # no lock before suspend
+
+# -------- Wallpapers (not in the repo; see omarchy/wallpapers.txt) --------
+WP="$HOME/.config/omarchy/backgrounds/ristretto"; mkdir -p "$WP"
+grep -v '^#' "$DOTFILES/omarchy/wallpapers.txt" | while read -r url; do
+  [ -n "$url" ] && [ ! -s "$WP/$(basename "$url")" ] && curl -sfL -o "$WP/$(basename "$url")" "$url" || true
+done
+
 # -------- OneDrive --------
 link onedrive/config "$HOME/.config/onedrive/config"
 

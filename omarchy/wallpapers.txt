@@ -1,0 +1,12 @@
+# Wallpapers for the Ristretto theme (Wallhaven, SFW, >= 3840x2160).
+# Downloaded by omarchy/install.sh into ~/.config/omarchy/backgrounds/ristretto/; images are not in the repo.
+https://w.wallhaven.cc/full/3q/wallhaven-3q5mx9.jpg
+https://w.wallhaven.cc/full/5y/wallhaven-5y3q31.jpg
+https://w.wallhaven.cc/full/ly/wallhaven-lyj5gl.jpg
+https://w.wallhaven.cc/full/ly/wallhaven-lyzd2l.jpg
+https://w.wallhaven.cc/full/og/wallhaven-oglrv9.jpg
+https://w.wallhaven.cc/full/po/wallhaven-polllj.jpg
+https://w.wallhaven.cc/full/po/wallhaven-pom5de.png
+https://w.wallhaven.cc/full/w5/wallhaven-w5x99p.jpg
+https://w.wallhaven.cc/full/yq/wallhaven-yqeyz7.jpg
+https://w.wallhaven.cc/full/yq/wallhaven-yqvj5g.jpg
