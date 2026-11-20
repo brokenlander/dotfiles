@@ -1,4 +1,0 @@
-tmux-navigator
-harpoon
-substitute
-lazygit
