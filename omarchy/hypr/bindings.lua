@@ -48,6 +48,8 @@ end
 hl.unbind("SUPER + SHIFT + G")        -- Signal
 hl.unbind("SUPER + SHIFT + ALT + M")  -- cliamp (Music TUI)
 hl.unbind("SUPER + SHIFT + W")        -- Omawrite
+hl.unbind("SUPER + CTRL + RETURN")     -- herdr (removed; tmux + agent-sidebar instead)
+hl.unbind("SUPER + CTRL + K")          -- herdr keybindings
 
 -- Passwords: Bitwarden instead of 1Password (same key as Omarchy's default).
 o.rebind("SUPER + SHIFT + SLASH", "Passwords", { launch = "bitwarden" })

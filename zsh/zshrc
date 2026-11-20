@@ -24,8 +24,10 @@ if [ -n "${OMARCHY_PATH:-}" ] && [ -d "$OMARCHY_PATH/default/bash" ]; then
   emulate ksh -c '. "$OMARCHY_PATH/default/bash/envs"'
   emulate ksh -c '. "$OMARCHY_PATH/default/bash/aliases"'
   for _f in "$OMARCHY_PATH"/default/bash/fns/*(N); do
+    [[ ${_f:t} == herdr ]] && continue   # herdr is removed (tmux + agent-sidebar instead)
     emulate ksh -c ". ${(q)_f}"
   done
+  unalias h 2>/dev/null   # Omarchy's alias for herdr
   unset _f
   # Its confirmation prompt is bash-only, and it wipes disks: run it in bash.
   format-drive() {

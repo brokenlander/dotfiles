@@ -162,6 +162,7 @@ Decided one by one on the laptop (Nov 2026). `omarchy/install.sh` applies it.
 - **OWE**: video wallpaper engine; no video wallpapers, login intro turned off
 - **Asian input methods** (Chinese, Japanese, Korean fcitx5 engines): not needed; fcitx5 itself stays
 - **asdcontrol**: brightness for Apple displays; none here
+- **herdr**: Omarchy's agent workspace manager; replaced by our own tmux + agent-sidebar stack (shortcuts, `h` alias and `hd*` functions dropped too)
 - **All other web apps** (X, YouTube, Basecamp, HEY, Zoom, Discord, Google Maps/Contacts/Messages/Photos) and their shortcuts, plus the Signal, cliamp and Omawrite keys
 
 **Added**
