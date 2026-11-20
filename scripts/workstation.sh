@@ -77,6 +77,16 @@ kwriteconfig6 --file kwalletrc --group Wallet --key "First Use" --type bool fals
 killall -q kwalletd6 kwalletd5 kwalletd 2>/dev/null || true
 echo -e "${GREEN}KDE Wallet disabled.${NC}"
 
+# ========== Tailscale (private network with the laptop and phone) ==========
+# The laptop reaches this box for Moonlight/Sunshine and SSH over Tailscale.
+echo "=== Tailscale ==="
+if ! command -v tailscale >/dev/null 2>&1; then
+    curl -fsSL https://tailscale.com/install.sh | sh
+fi
+sudo systemctl enable --now tailscaled
+sudo tailscale set --operator="$USER" 2>/dev/null || true
+tailscale status >/dev/null 2>&1 || echo "  -> log in: sudo tailscale up --accept-routes   (opens a login link)"
+
 # ========== Sunshine (game / desktop streaming host) ==========
 # The laptop connects with Moonlight (also over Tailscale). Configure at https://localhost:47990
 echo "=== Sunshine ==="
