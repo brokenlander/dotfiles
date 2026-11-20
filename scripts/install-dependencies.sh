@@ -117,6 +117,16 @@ else
     fi
 fi
 
+# kubectl (latest stable, official binary; same tool as on Omarchy)
+echo "=== Installing kubectl ==="
+if command -v kubectl &> /dev/null; then
+    echo "kubectl already installed, skipping..."
+else
+    KVER=$(curl -fsSL https://dl.k8s.io/release/stable.txt)
+    curl -fsSLo /tmp/kubectl "https://dl.k8s.io/release/${KVER}/bin/linux/amd64/kubectl"
+    sudo install -m 755 /tmp/kubectl /usr/local/bin/kubectl && rm -f /tmp/kubectl
+fi
+
 # Starship prompt
 echo "=== Installing Starship ==="
 if command -v starship &> /dev/null; then

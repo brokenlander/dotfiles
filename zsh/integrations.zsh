@@ -34,5 +34,8 @@ if command -v try >/dev/null; then
   }
 fi
 
+# kubectl tab completion
+command -v kubectl >/dev/null && source <(kubectl completion zsh)
+
 # Prompt
 command -v starship >/dev/null && eval "$(starship init zsh)"
