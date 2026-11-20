@@ -278,6 +278,14 @@ dotfiles/
 - `|` / `-` split panes
 - `Alt+h/j/k/l` switch panes (no prefix)
 - `Prefix+Ctrl+s` save session, `Prefix+Ctrl+r` restore
+- `Prefix+y` session picker (sesh), `Prefix+d` scratch popup, `Prefix+R` reload config
+- Agents (tmux/agents.conf): `Prefix+e` sidebar, `Prefix+u` agent picker, `Prefix+a` new agent,
+  `Prefix+q` end, `Prefix+r` reset, `Prefix+o` reopen, `Prefix+B` branch, `Prefix+b` board
+- Copy goes to the system clipboard (OSC 52); right-click pastes it (wl-paste)
+
+Base config (`tmux/.tmux.conf`) works anywhere; the agent layer loads only when
+`~/forge/agent-sidebar` and `~/dotfiles/bin/pm-agent` exist. `scripts/agents-setup.sh`
+installs agent-sidebar, tmux-resurrect (no TPM) and the Claude Code hooks on both machines.
 
 ### ZSH
 - `Ctrl+R` fuzzy history (fzf)

@@ -72,6 +72,18 @@ fi
 # Global commit guards (core.hooksPath = ~/.git-hooks/)
 for hook in "$DOTFILES"/git-hooks/*; do link "git-hooks/$(basename "$hook")" "$HOME/.git-hooks/$(basename "$hook")"; done
 
+# -------- tmux + agent workflow (agent-sidebar, pm-* tools, agent keys) --------
+pacman -Q tmux >/dev/null 2>&1 || omarchy pkg add tmux
+pacman -Q sesh >/dev/null 2>&1 || omarchy pkg aur add sesh   # prefix+y session picker
+link tmux/.tmux.conf "$HOME/.tmux.conf"
+link tmux/.tmux.conf "$HOME/.config/tmux/tmux.conf"   # Omarchy's own tmux config is replaced
+for u in tmux-resurrect-save.service tmux-resurrect-save.timer; do
+  link "systemd/user/$u" "$HOME/.config/systemd/user/$u"
+done
+systemctl --user daemon-reload
+systemctl --user enable --now tmux-resurrect-save.timer
+"$DOTFILES/scripts/agents-setup.sh"
+
 # -------- Editor --------
 link nvim/lua/plugins/dashboard.lua "$HOME/.config/nvim/lua/plugins/dashboard.lua"
 

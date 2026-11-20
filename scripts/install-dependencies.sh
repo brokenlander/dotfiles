@@ -249,13 +249,7 @@ else
     fi
 fi
 
-# TPM (Tmux Plugin Manager)
-echo "=== Installing TPM ==="
-if [ -d "$HOME/.tmux/plugins/tpm" ]; then
-    echo "TPM already installed, skipping..."
-else
-    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-fi
+# tmux-resurrect, agent-sidebar and the agent hooks: scripts/agents-setup.sh (run by install.sh)
 
 # sesh — smart tmux session manager (needs Go)
 echo "=== Installing sesh ==="

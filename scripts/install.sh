@@ -134,14 +134,8 @@ echo "Setting up Tmux configuration..."
 if [ -f "$DOTFILES/tmux/.tmux.conf" ]; then
     create_symlink "$DOTFILES/tmux/.tmux.conf" "$HOME/.tmux.conf"
 
-    # Install tmux plugins via TPM
-    if [ -d "$HOME/.tmux/plugins/tpm" ]; then
-        echo "Installing tmux plugins..."
-        "$HOME/.tmux/plugins/tpm/bin/install_plugins"
-        echo -e "${GREEN}Tmux plugins installed${NC}"
-    else
-        echo -e "${YELLOW}Warning:${NC} TPM not found. Run install-dependencies.sh first."
-    fi
+    # Agent workflow: agent-sidebar, tmux-resurrect, Claude Code hooks (same as Omarchy)
+    "$DOTFILES/scripts/agents-setup.sh"
 
     # tmux-resurrect periodic save, via a systemd user timer rather than a
     # status-line hook that forks on every render
