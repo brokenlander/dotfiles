@@ -178,7 +178,7 @@ Decided one by one on the laptop (Nov 2026). `omarchy/install.sh` applies it.
 - **All other web apps** (X, YouTube, Basecamp, HEY, Zoom, Discord, Google Maps/Contacts/Messages/Photos) and their shortcuts, plus the Signal, cliamp and Omawrite keys
 
 **Added**
-- **OnlyOffice**, **Discord** (official app, replaces Vesktop on Ubuntu), **Spotify**, **Bitwarden** (replaces KeePassXC and Zen's saved passwords; `Super+Shift+/`), **OBS Studio**, **Steam** (Omarchy's gaming installer, with 32-bit GPU libraries), **Xbox controller driver** (xpadneo, pair with `Super+Ctrl+B`), **MangoHud + Gamemode** (per game in Steam: launch options `gamemoderun mangohud %command%`), **lazydocker** (`Super+Shift+D`)
+- **OnlyOffice**, **Discord** (official app, replaces Vesktop on Ubuntu), **Spotify**, **Bitwarden** (replaces KeePassXC and Zen's saved passwords; `Super+Shift+/`), **OBS Studio**, **Steam** (Omarchy's gaming installer, with 32-bit GPU libraries), **Xbox controller driver** (xpadneo, pair with `Super+Ctrl+B`), **MangoHud + Gamemode** (per game in Steam: launch options `gamemoderun mangohud %command%`), **lazydocker** (`Super+Shift+D`), CLI tools **dust, duf, glow, rclone, gping** (as on Ubuntu)
 
 ## What's Included
 
