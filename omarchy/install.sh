@@ -111,6 +111,12 @@ sudo install -m 644 "$DOTFILES/omarchy/system/sleep-hibernate.conf" /etc/systemd
 sudo systemctl kill -s HUP systemd-logind
 omarchy hibernation available || omarchy hibernation setup
 
+# Battery care: charge window 50-80% (re-applied at boot)
+if [ -w /sys/class/power_supply/BAT0/charge_control_end_threshold ] || [ -e /sys/class/power_supply/BAT0/charge_control_end_threshold ]; then
+  sudo install -m 644 "$DOTFILES/omarchy/system/battery-charge.conf" /etc/tmpfiles.d/battery-charge.conf
+  sudo systemd-tmpfiles --create /etc/tmpfiles.d/battery-charge.conf || true
+fi
+
 # -------- Wallpapers (not in the repo; see omarchy/wallpapers.txt) --------
 WP="$HOME/.config/omarchy/backgrounds/ristretto"; mkdir -p "$WP"
 grep -v '^#' "$DOTFILES/omarchy/wallpapers.txt" | while read -r url; do

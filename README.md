@@ -121,6 +121,9 @@ Manual afterwards:
   (opening the lid wakes it, no lock); after 2 h suspended it hibernates (fully off:
   press power, then the disk password). With an external monitor it never sleeps.
   Don't put it in a bag closed for under 5 min. Nothing ever locks automatically.
+- Battery: charges to 80% and only restarts below 50% (longer battery life). For a long
+  day unplugged: `echo 100 | sudo tee /sys/class/power_supply/BAT0/charge_control_end_threshold`
+  (back to 80 at the next boot).
 - Web apps: only WhatsApp is kept. Some Omarchy installers add one back
   (Tailscale adds its admin page); run `~/dotfiles/omarchy/remove-webapps.sh` afterwards.
 - OneDrive: `onedrive` (log in). The config skips only the top-level `Foto`
