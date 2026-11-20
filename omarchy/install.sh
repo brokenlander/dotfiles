@@ -41,12 +41,6 @@ rm -rf "$HOME/.config/herdr"   # herdr: replaced by tmux + agent-sidebar
 # Tailscale (asks you to log in through a link the first time)
 pacman -Q tailscale >/dev/null 2>&1 || omarchy install service tailscale
 
-# Web apps: only WhatsApp (no native Linux app). Everything else opens in Zen.
-for w in "X" "YouTube" "Basecamp" "HEY" "Zoom" "Discord" "Google Maps" "Google Contacts" \
-         "Google Messages" "Google Photos" "Tailscale"; do
-  [ -f "$HOME/.local/share/applications/$w.desktop" ] && omarchy webapp remove "$w" >/dev/null 2>&1 || true
-done
-
 # -------- Shell --------
 mkdir -p "$HOME/forge"
 if ! grep -q 'dotfiles/shell/aliases.sh' "$HOME/.bashrc"; then
@@ -105,5 +99,8 @@ done
 
 # -------- OneDrive --------
 link onedrive/config "$HOME/.config/onedrive/config"
+
+# -------- Web apps (LAST: installers above, e.g. Tailscale, add their own) --------
+"$DOTFILES/omarchy/remove-webapps.sh"
 
 echo -e "${GREEN}Done.${NC} Manual steps: README > Omarchy."
