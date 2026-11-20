@@ -103,6 +103,14 @@ link omarchy/hypr/hypridle.conf "$HOME/.config/hypr/hypridle.conf"
 systemctl --user enable --now hypridle.service
 systemctl --user mask --now omarchy-sleep-lock.service   # no lock before suspend
 
+# Lid: never locks. Screen off when closed; suspend after 5 min; hibernate after
+# 2 h of suspend (omarchy/bin/lid via Hyprland's lid binding; logind ignores the lid)
+sudo install -m 644 "$DOTFILES/omarchy/system/logind-lid.conf" /etc/systemd/logind.conf.d/60-lid.conf
+sudo mkdir -p /etc/systemd/sleep.conf.d
+sudo install -m 644 "$DOTFILES/omarchy/system/sleep-hibernate.conf" /etc/systemd/sleep.conf.d/60-hibernate-delay.conf
+sudo systemctl kill -s HUP systemd-logind
+omarchy hibernation available || omarchy hibernation setup
+
 # -------- Wallpapers (not in the repo; see omarchy/wallpapers.txt) --------
 WP="$HOME/.config/omarchy/backgrounds/ristretto"; mkdir -p "$WP"
 grep -v '^#' "$DOTFILES/omarchy/wallpapers.txt" | while read -r url; do

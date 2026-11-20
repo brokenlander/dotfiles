@@ -1,0 +1,38 @@
+#!/bin/bash
+# Laptop lid, driven by Hyprland's lid switch (omarchy/hypr/bindings.lua).
+# logind ignores the lid (omarchy/system/logind-lid.conf), so this decides:
+#
+#   lid closed         -> screen off, everything keeps running
+#   closed for 5 min   -> suspend (instant resume, lid open wakes it)
+#   suspended for 2 h  -> hibernate (omarchy/system/sleep-hibernate.conf)
+#   lid opened         -> cancel the timer, screen back on
+#
+# With an external monitor connected the lid only switches displays
+# (clamshell) and the laptop never sleeps. It never locks.
+set -u
+UNIT=lid-suspend
+DELAY=${LID_SUSPEND_AFTER:-5min}
+
+case "${1:-}" in
+  close)
+    omarchy-hyprland-monitor-clamshell >/dev/null 2>&1 || true
+    omarchy-hw-external-monitors && exit 0
+    omarchy-brightness-display off >/dev/null 2>&1 || true
+    systemctl --user stop "$UNIT.timer" "$UNIT.service" >/dev/null 2>&1 || true
+    systemd-run --user --quiet --collect --unit="$UNIT" --on-active="$DELAY" \
+      --timer-property=AccuracySec=5s "$0" sleep
+    ;;
+  sleep)
+    # Only if the lid is still closed and nothing was plugged in meanwhile.
+    omarchy-hw-laptop-closed || exit 0
+    omarchy-hw-external-monitors && exit 0
+    systemctl suspend-then-hibernate
+    ;;
+  open)
+    systemctl --user stop "$UNIT.timer" "$UNIT.service" >/dev/null 2>&1 || true
+    omarchy-system-wake >/dev/null 2>&1 || true
+    omarchy-hyprland-monitor-clamshell >/dev/null 2>&1 || true
+    ;;
+  *)
+    echo "usage: lid close|open|sleep" >&2; exit 1 ;;
+esac

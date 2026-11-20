@@ -117,6 +117,10 @@ OneDrive config. Terminals run zsh with the same shared config as Ubuntu
 Manual afterwards:
 - `gh auth login` (git uses `gh` via `~/.gitconfig.local`)
 - Zen: sign into the Mozilla account
+- Lid: closing it only turns the screen off; still closed after 5 min the laptop suspends
+  (opening the lid wakes it, no lock); after 2 h suspended it hibernates (fully off:
+  press power, then the disk password). With an external monitor it never sleeps.
+  Don't put it in a bag closed for under 5 min. Nothing ever locks automatically.
 - Web apps: only WhatsApp is kept. Some Omarchy installers add one back
   (Tailscale adds its admin page); run `~/dotfiles/omarchy/remove-webapps.sh` afterwards.
 - OneDrive: `onedrive` (log in). The config skips only the top-level `Foto`

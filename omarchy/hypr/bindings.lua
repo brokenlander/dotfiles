@@ -51,10 +51,11 @@ hl.unbind("SUPER + SHIFT + W")        -- Omawrite
 hl.unbind("SUPER + CTRL + RETURN")     -- herdr (removed; tmux + agent-sidebar instead)
 hl.unbind("SUPER + CTRL + K")          -- herdr keybindings
 
--- Lid close: Omarchy locks here (omarchy-system-lid-close), separately from the
--- lock-before-sleep service. The laptop locks only by hand, so keep just the
--- display handling (clamshell with an external monitor) and skip the lock.
-o.rebind("switch:on:Lid Switch", nil, "omarchy-hyprland-monitor-clamshell", { locked = true })
+-- Lid: never locks. Closed -> screen off; still closed after 5 min -> suspend;
+-- suspended 2 h -> hibernate. Opened -> screen back on. External monitor ->
+-- clamshell only. See ~/dotfiles/omarchy/bin/lid (logind ignores the lid).
+o.rebind("switch:on:Lid Switch", nil, os.getenv("HOME") .. "/dotfiles/omarchy/bin/lid close", { locked = true })
+o.rebind("switch:off:Lid Switch", nil, os.getenv("HOME") .. "/dotfiles/omarchy/bin/lid open", { locked = true })
 
 -- Passwords: Bitwarden instead of 1Password (same key as Omarchy's default).
 o.rebind("SUPER + SHIFT + SLASH", "Passwords", { launch = "bitwarden" })
