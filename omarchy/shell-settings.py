@@ -65,6 +65,7 @@ ensure("omarchy.tailscale", "right", before="omarchy.network")
 ensure(
     "omarchy.elsewhen",
     "centerEnd",
+    units="C",  # Celsius, like the weather widget
     cities=[
         {"name": "Geneva", "zone": "Europe/Zurich"},
         {"name": "Arona", "zone": "Europe/Rome"},
