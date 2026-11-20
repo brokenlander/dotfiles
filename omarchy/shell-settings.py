@@ -75,6 +75,13 @@ ensure(
     ],
 )
 
+# Tray: hide Solaar's icon (it keeps running for the Logitech devices).
+ensure("omarchy.tray", "right")
+_, _, tray = find("omarchy.tray")
+hidden = tray.setdefault("hidden", [])
+if "indicator-solaar" not in hidden:
+    hidden.append("indicator-solaar")
+
 # Weather in °C and km/h (the en_US locale would otherwise pick °F).
 ensure("omarchy.weather", "centerEnd", unit="metric")
 
