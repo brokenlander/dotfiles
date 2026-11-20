@@ -33,7 +33,7 @@ pacman -Q solaar >/dev/null 2>&1 || omarchy pkg add solaar   # Logitech MX Keys 
 omarchy pkg add discord spotify bitwarden obs-studio
 omarchy pkg add lazydocker   # Docker TUI, Super+Shift+D
 omarchy pkg add dust duf glow rclone gping   # CLI tools, same as on Ubuntu
-omarchy pkg add kubectl
+omarchy pkg add kubectl k9s
 # Sudoless Docker (docker group), like the workstation. Omarchy warns it equals
 # passwordless root; this setup already has passwordless sudo, so no extra exposure.
 id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"

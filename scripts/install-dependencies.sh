@@ -127,6 +127,17 @@ else
     sudo install -m 755 /tmp/kubectl /usr/local/bin/kubectl && rm -f /tmp/kubectl
 fi
 
+# k9s (terminal UI for Kubernetes clusters), official .deb from GitHub releases
+echo "=== Installing k9s ==="
+if ! command -v k9s &> /dev/null; then
+    K9S_URL=$(curl -s https://api.github.com/repos/derailed/k9s/releases/latest | grep -Po '"browser_download_url": *"\K[^"]+' | grep -E 'k9s_linux_amd64\.deb$' | head -1)
+    if [ -n "$K9S_URL" ]; then
+        wget -qO /tmp/k9s.deb "$K9S_URL" && sudo apt-get install -y /tmp/k9s.deb && rm -f /tmp/k9s.deb
+    else
+        echo "WARNING: k9s .deb not found. Skipping."
+    fi
+fi
+
 # Starship prompt
 echo "=== Installing Starship ==="
 if command -v starship &> /dev/null; then
