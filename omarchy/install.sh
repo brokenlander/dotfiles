@@ -56,6 +56,7 @@ link nvim/lua/plugins/dashboard.lua "$HOME/.config/nvim/lua/plugins/dashboard.lu
 # -------- Hyprland --------
 link omarchy/hypr/looknfeel.lua "$HOME/.config/hypr/looknfeel.lua"
 link omarchy/hypr/input.lua "$HOME/.config/hypr/input.lua"   # natural touchpad scrolling
+link omarchy/hypr/bindings.lua "$HOME/.config/hypr/bindings.lua"   # Alt+\ types ~
 
 # -------- Idle: screen off after 5 min, never auto-lock --------
 python3 -I - <<'PYJ'
