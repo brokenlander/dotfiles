@@ -27,5 +27,13 @@
 -- o.bind("SUPER + PERIOD", nil, { panel = "omarchy.emojis" })
 
 -- Alt+\ (key left of 1 on the Italian keyboard) types ~ in every app.
--- The Italian layout has no easy tilde (only AltGr+ì).
-o.bind("ALT + backslash", "Type tilde", "wtype -m alt '~'")
+-- The Italian layout has no easy tilde (only AltGr+ì). Send exactly AltGr+ì
+-- (MOD5 + key code 21) to the focused window, so the held Alt never leaks into
+-- it (with wtype, apps saw Alt+~ and bash listed usernames). Same down/up
+-- pattern as Omarchy's default/hypr/bindings/jis.lua.
+o.bind("ALT + backslash", "Type tilde", function()
+  hl.dispatch(hl.dsp.send_key_state({ mods = "MOD5", key = "code:21", state = "down" }))
+  hl.timer(function()
+    hl.dispatch(hl.dsp.send_key_state({ mods = "MOD5", key = "code:21", state = "up" }))
+  end, { timeout = 50, type = "oneshot" })
+end)
