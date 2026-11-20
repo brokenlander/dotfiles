@@ -2,7 +2,7 @@
 # Block AI references in staged content, CLAUDE.md, and banned commit identities.
 . "$(dirname "$(readlink -f "$0")")/_guard-common.sh"
 
-if git diff --cached --name-only | grep -qi "^claude\.md$"; then
+if git diff --cached --name-only --diff-filter=ACMR | grep -qi "^claude\.md$"; then
   guard_die "CLAUDE.md is staged." "Unstage it: git reset HEAD CLAUDE.md"
 fi
 
