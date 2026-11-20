@@ -180,22 +180,9 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githu
 sudo apt update
 sudo apt install -y gh
 
-# ZSH plugins (no Oh-My-ZSH, manual install)
+# ZSH plugins (no Oh-My-ZSH): same script as on Omarchy
 echo "=== Installing ZSH plugins ==="
-ZSH_PLUGINS="$HOME/.zsh/plugins"
-mkdir -p "$ZSH_PLUGINS"
-
-if [ ! -d "$ZSH_PLUGINS/zsh-autosuggestions" ]; then
-    git clone https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_PLUGINS/zsh-autosuggestions"
-fi
-
-if [ ! -d "$ZSH_PLUGINS/fast-syntax-highlighting" ]; then
-    git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git "$ZSH_PLUGINS/fast-syntax-highlighting"
-fi
-
-if [ ! -d "$ZSH_PLUGINS/zsh-completions" ]; then
-    git clone https://github.com/zsh-users/zsh-completions.git "$ZSH_PLUGINS/zsh-completions"
-fi
+"$(dirname "$0")/../shell/install-zsh-plugins.sh"
 
 # Micromamba
 echo "=== Installing Micromamba ==="
@@ -222,22 +209,16 @@ pipx install black
 pipx install isort
 
 
-# fnm (Fast Node Manager)
-echo "=== Installing fnm ==="
-if command -v fnm &> /dev/null; then
-    echo "fnm already installed, skipping..."
-else
-    curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
+# mise: language versions and per-folder env (replaces fnm and direnv; same as Omarchy)
+echo "=== Installing mise ==="
+if ! command -v mise &> /dev/null; then
+    curl -fsSL https://mise.run | sh
 fi
-export PATH="$HOME/.local/share/fnm:$PATH"
-eval "$(fnm env)"
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
 # Node.js
 echo "=== Installing Node.js ==="
-fnm install --lts
-# `fnm use --lts` is not valid (no such flag); install --lts aliases it to lts-latest
-fnm use lts-latest
-fnm default lts-latest
+mise use -g node@lts
 npm install --global yarn
 npm install --global tree-sitter-cli
 npm install --global neovim
@@ -248,8 +229,9 @@ if command -v claude &> /dev/null; then
     echo "Claude Code CLI already installed, skipping..."
 else
     curl -fsSL https://cli.claude.ai/install.sh | sh
-    if ! grep -q "claude/bin" ~/.zshrc; then
-        echo 'export PATH="$HOME/.claude/bin:$PATH"' >> ~/.zshrc
+    # ~/.zshrc is the shared repo file; machine-only lines go in ~/.zshrc.local
+    if ! grep -q "claude/bin" ~/.zshrc.local 2>/dev/null; then
+        echo 'export PATH="$HOME/.claude/bin:$PATH"' >> ~/.zshrc.local
     fi
 fi
 
@@ -291,14 +273,6 @@ if [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]; then
     echo "FZF keybindings available"
 else
     echo "Warning: FZF keybindings not found at expected location"
-fi
-
-# Direnv
-echo "=== Installing Direnv ==="
-if command -v direnv &> /dev/null; then
-    echo "Direnv already installed, skipping..."
-else
-    sudo apt install -y direnv
 fi
 
 # Lazygit

@@ -5,6 +5,12 @@ alias vim='nvim'
 alias vi='nvim'
 alias lg='lazygit'
 alias cdf='cd ~/forge'
+alias top='btop'
+alias help='tldr'
+if command -v eza >/dev/null 2>&1; then
+  alias ll='eza -la'
+  alias la='eza -a'
+fi
 
 # Claude Code
 alias cld='claude --dangerously-skip-permissions'

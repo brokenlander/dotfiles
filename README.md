@@ -111,8 +111,8 @@ git clone https://github.com/brokenlander/dotfiles.git ~/dotfiles
 It sets the Ristretto theme, installs Zen (default browser) and the OneDrive
 client, and links: foot, starship, git (`~/.config/git/`), shared aliases
 (sourced from `~/.bashrc`), the nvim start page, Hyprland look'n'feel, and the
-OneDrive config. Shell is Omarchy's bash; Ubuntu keeps zsh with the same
-aliases.
+OneDrive config. Terminals run zsh with the same shared config as Ubuntu
+(`zsh/zshrc`); bash stays the login shell because Omarchy's session expects it.
 
 Manual afterwards:
 - `gh auth login` (git uses `gh` via `~/.gitconfig.local`)
@@ -132,7 +132,7 @@ Manual afterwards:
 | Git | Delta pager, GitHub CLI integration, aliases |
 | CLI tools | bat, eza, fd, ripgrep, zoxide, delta, dust, btop, tldr, duf, difftastic |
 | Dev tools | lazygit, lazydocker, fzf, direnv, gh CLI |
-| Runtimes | fnm (Node.js), uv (Python), micromamba (conda), pipx |
+| Runtimes | mise (Node.js and other versions, per-folder env), uv (Python), micromamba (conda, workstation), pipx |
 | Containers | Docker, Docker Compose |
 
 ### Desktop (Kubuntu)
@@ -194,7 +194,8 @@ sets only *sync sentinels*, never pref values — the values ride Firefox Sync.
 ```
 dotfiles/
 ├── nvim/           # Neovim (Lazy.nvim, LSP, plugins)
-├── zsh/            # Shell aliases, keybindings, integrations
+├── zsh/            # Shared zshrc, key bindings, integrations
+├── shell/          # Aliases + env shared by zsh/bash, Omarchy compat for Ubuntu
 ├── tmux/           # Tmux config + Tokyo Night theme
 ├── git/            # .gitconfig + .gitignore_global
 ├── git-hooks/      # Global git hooks (block AI references in commits)
@@ -232,6 +233,11 @@ dotfiles/
 - `Ctrl+R` fuzzy history (fzf)
 - `Ctrl+T` fuzzy file search
 - `Alt+C` fuzzy cd
+- `→` accept the grey autosuggestion
+- `Alt+\` types `~`, `Alt+'` types `` ` `` (Italian keyboard). On Omarchy these
+  work in every app (Hyprland); on Ubuntu, at the zsh prompt.
+
+Machine-only zsh lines go in `~/.zshrc.local` (sourced by the shared `~/.zshrc`).
 
 ## Uninstall
 

@@ -78,34 +78,16 @@ if [ -L "$HOME/.local/share/org.kde.syntax-highlighting/themes/tokyo-night.theme
     echo -e "${YELLOW}Removed${NC} Kate Tokyo Night theme symlink"
 fi
 
-# Restore .zshrc from backup if it exists, otherwise strip dotfiles lines
+# ~/.zshrc is a link to the repo: remove the link (never edit through it),
+# then restore the pre-dotfiles backup if there is one.
+if [ -L "$HOME/.zshrc" ]; then
+    rm -f "$HOME/.zshrc"
+    echo -e "${YELLOW}Removed${NC} ~/.zshrc link"
+fi
 if [ -n "$BACKUP_DIR" ] && [ -f "$BACKUP_DIR/.zshrc" ]; then
     cp "$BACKUP_DIR/.zshrc" "$HOME/.zshrc"
     echo -e "${GREEN}Restored${NC} original .zshrc from backup"
-elif [ -f "$HOME/.zshrc" ]; then
-    echo "No .zshrc backup found, stripping dotfiles-specific lines..."
-    TEMP_FILE=$(mktemp)
-    sed '/# Added by dotfiles installer/d;
-         /source \$HOME\/.dotfiles\/zsh\/aliases.zsh/d;
-         /source \$HOME\/.dotfiles\/zsh\/key-bindings.zsh/d;
-         /source \$HOME\/.dotfiles\/zsh\/integrations.zsh/d;
-         /# ZSH plugins (autosuggestions/d;
-         /ZSH_PLUGINS="\$HOME\/.zsh\/plugins"/d;
-         /zsh-autosuggestions\.zsh/d;
-         /fast-syntax-highlighting\.plugin\.zsh/d;
-         /zsh-completions\/src/d;
-         /autoload -Uz compinit/d;
-         /# Initialize completions/d;
-         /# >>> mamba initialize >>>/,/# <<< mamba initialize <<</d' "$HOME/.zshrc" > "$TEMP_FILE"
-    cp "$TEMP_FILE" "$HOME/.zshrc"
-    rm "$TEMP_FILE"
-    echo -e "${GREEN}Removed${NC} dotfiles-specific lines from .zshrc"
 fi
-
-# Remove ZSH configuration symlinks
-rm -f "$HOME/.dotfiles/zsh/aliases.zsh"
-rm -f "$HOME/.dotfiles/zsh/key-bindings.zsh"
-rm -f "$HOME/.dotfiles/zsh/integrations.zsh"
 
 # Remove modular configuration directory
 if [ -d "$HOME/.dotfiles" ]; then

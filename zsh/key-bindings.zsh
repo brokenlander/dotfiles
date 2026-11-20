@@ -1,10 +1,14 @@
-# Custom Key Bindings
-# ----------------------------------------
+# Key bindings for the zsh prompt (both machines).
 
-# Navigation keys
+# Home / End / Delete
 bindkey "^[[H" beginning-of-line
 bindkey "^[[F" end-of-line
 bindkey "^[[3~" delete-char
 
-# Italian keyboard tilde key binding
-bindkey -s '\e\\' '~'
+# Italian keyboard: Alt+\ types ~ and Alt+' types `.
+# On Omarchy these are desktop-wide Hyprland shortcuts (every app), so they
+# are only bound here where Hyprland is not running (the Ubuntu workstation).
+if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+  bindkey -s '\e\\' '~'
+  bindkey -s "\e'" '`'
+fi

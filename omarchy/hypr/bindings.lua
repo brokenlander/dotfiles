@@ -31,9 +31,15 @@
 -- (MOD5 + key code 21) to the focused window, so the held Alt never leaks into
 -- it (with wtype, apps saw Alt+~ and bash listed usernames). Same down/up
 -- pattern as Omarchy's default/hypr/bindings/jis.lua.
-o.bind("ALT + backslash", "Type tilde", function()
-  hl.dispatch(hl.dsp.send_key_state({ mods = "MOD5", key = "code:21", state = "down" }))
+local function send_altgr(code)
+  hl.dispatch(hl.dsp.send_key_state({ mods = "MOD5", key = code, state = "down" }))
   hl.timer(function()
-    hl.dispatch(hl.dsp.send_key_state({ mods = "MOD5", key = "code:21", state = "up" }))
+    hl.dispatch(hl.dsp.send_key_state({ mods = "MOD5", key = code, state = "up" }))
   end, { timeout = 50, type = "oneshot" })
-end)
+end
+
+o.bind("ALT + backslash", "Type tilde", function() send_altgr("code:21") end)
+
+-- Alt+' types ` (backtick), which the Italian layout only has on AltGr+'
+-- (key code 20). The zsh versions of both live in zsh/key-bindings.zsh for Ubuntu.
+o.bind("ALT + apostrophe", "Type backtick", function() send_altgr("code:20") end)

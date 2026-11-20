@@ -1,0 +1,59 @@
+# Shared ~/.zshrc (Omarchy laptop + Ubuntu workstation), linked by the installers.
+# Machine-only additions go in ~/.zshrc.local (not in the repo).
+#
+# On Omarchy, bash stays the login shell (the session expects it); only
+# terminals and tmux run zsh, so Omarchy's own bash setup is loaded here too.
+
+DOTFILES="$HOME/dotfiles"
+
+# -------- History --------
+HISTFILE=~/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+setopt APPEND_HISTORY SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE
+
+# -------- Omarchy layer --------
+# Omarchy's env, aliases (ls, ff, n, g, t, ...) and functions (tdl, ...) come
+# straight from its package, so updates arrive here automatically. They are
+# written for bash, so they load in ksh emulation (bash-like arrays and word
+# splitting), which zsh keeps for every function defined that way.
+if [ -r /usr/share/omarchy/default/bash/env-bootstrap ]; then
+  emulate sh -c '. /usr/share/omarchy/default/bash/env-bootstrap'
+fi
+if [ -n "${OMARCHY_PATH:-}" ] && [ -d "$OMARCHY_PATH/default/bash" ]; then
+  emulate ksh -c '. "$OMARCHY_PATH/default/bash/envs"'
+  emulate ksh -c '. "$OMARCHY_PATH/default/bash/aliases"'
+  for _f in "$OMARCHY_PATH"/default/bash/fns/*(N); do
+    emulate ksh -c ". ${(q)_f}"
+  done
+  unset _f
+  # Its confirmation prompt is bash-only, and it wipes disks: run it in bash.
+  format-drive() {
+    bash -c '. "$OMARCHY_PATH/default/bash/fns/drives"; format-drive "$@"' format-drive "$@"
+  }
+else
+  # Ubuntu: a copy of Omarchy's aliases, so both machines feel the same.
+  source "$DOTFILES/shell/omarchy-compat.sh"
+fi
+
+# Terminals started from here (tmux, nvim :terminal) should get zsh too.
+export SHELL="${commands[zsh]:-$SHELL}"
+
+# -------- Shared shell setup --------
+source "$DOTFILES/shell/aliases.sh"
+source "$DOTFILES/shell/env.sh"
+source "$DOTFILES/zsh/key-bindings.zsh"
+source "$DOTFILES/zsh/integrations.zsh"
+
+# -------- Plugins (cloned by shell/install-zsh-plugins.sh) --------
+ZSH_PLUGINS="$HOME/.zsh/plugins"
+[ -d "$ZSH_PLUGINS/zsh-completions/src" ] && fpath=("$ZSH_PLUGINS/zsh-completions/src" $fpath)
+autoload -Uz compinit && compinit
+[ -f "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh"
+[ -f "$ZSH_PLUGINS/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh" ] && source "$ZSH_PLUGINS/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
+
+# -------- This machine only --------
+[ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"
+
+# zoxide must be last
+command -v zoxide >/dev/null && eval "$(zoxide init zsh)"

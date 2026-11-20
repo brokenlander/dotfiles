@@ -39,6 +39,11 @@ if ! grep -q 'dotfiles/shell/env.sh' "$HOME/.bashrc"; then
   echo -e "${GREEN}Added${NC} shell env to ~/.bashrc"
 fi
 
+# zsh in terminals (bash stays the login shell; Omarchy's session expects it)
+pacman -Q zsh >/dev/null 2>&1 || omarchy pkg add zsh
+"$DOTFILES/shell/install-zsh-plugins.sh"
+link zsh/zshrc "$HOME/.zshrc"
+
 # -------- Terminal + prompt --------
 link foot/foot.ini "$HOME/.config/foot/foot.ini"
 ln -sfn "$HOME/.local/state/omarchy/current/theme/foot.ini" "$HOME/.config/foot/theme.ini"

@@ -62,69 +62,29 @@ create_symlink() {
 
 echo "Installing terminal configuration..."
 
-# Create ~/.dotfiles directory
-mkdir -p "$HOME/.dotfiles/zsh"
-
-# -------- ZSH Configuration (Non-destructive) --------
+# -------- ZSH Configuration --------
+# One shared ~/.zshrc for both machines (zsh/zshrc). Machine-only lines that
+# tools append (conda init, etc.) belong in ~/.zshrc.local, which it sources.
 echo "Setting up ZSH configuration..."
 
-# Create symlinks for ZSH module files
-create_symlink "$DOTFILES/zsh/aliases.zsh" "$HOME/.dotfiles/zsh/aliases.zsh"
-create_symlink "$DOTFILES/zsh/key-bindings.zsh" "$HOME/.dotfiles/zsh/key-bindings.zsh"
-create_symlink "$DOTFILES/zsh/integrations.zsh" "$HOME/.dotfiles/zsh/integrations.zsh"
-
-# Backup the existing .zshrc
-backup_file "$HOME/.zshrc"
-
-# Clean up conflicting configs (oh-my-zsh, nvm) from .zshrc
-if [ -f "$HOME/.zshrc" ] && grep -q "oh-my-zsh\|nvm" "$HOME/.zshrc" 2>/dev/null; then
-    echo "Cleaning up conflicting configs from .zshrc..."
-    sed -i '/oh-my-zsh/d; /ZSH_THEME/d; /DISABLE_.*UPDATE/d; /HIST_STAMPS/d; /^plugins=/d; /^export ZSH=/d' "$HOME/.zshrc"
-    sed -i '/nvm\.sh/d; /NVM_DIR/d; /nvm use/d; /nvm bash_completion/d' "$HOME/.zshrc"
-    # Remove empty lines left behind (collapse multiple blank lines to one)
-    sed -i '/^$/N;/^\n$/d' "$HOME/.zshrc"
-    echo -e "${GREEN}Removed${NC} oh-my-zsh and nvm references from .zshrc"
+# Old layout: separate module links under ~/.dotfiles/zsh, appended .zshrc block
+if [ -d "$HOME/.dotfiles/zsh" ]; then
+    rm -rf "$HOME/.dotfiles/zsh"
+    echo -e "${YELLOW}Removed${NC} ~/.dotfiles/zsh (zshrc now sources the repo directly)"
 fi
+if [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ] && [ ! -f "$HOME/.zshrc.local" ]; then
+    echo -e "${YELLOW}Note:${NC} your old ~/.zshrc is backed up; copy any machine-only lines into ~/.zshrc.local"
+fi
+create_symlink "$DOTFILES/zsh/zshrc" "$HOME/.zshrc"
 
-# Remove oh-my-zsh directory if present (replaced by starship + manual plugins)
+# Remove oh-my-zsh and nvm if present (starship + plain plugins; mise for node)
 if [ -d "$HOME/.oh-my-zsh" ]; then
     rm -rf "$HOME/.oh-my-zsh"
-    echo -e "${GREEN}Removed${NC} ~/.oh-my-zsh (replaced by starship + manual plugins)"
+    echo -e "${GREEN}Removed${NC} ~/.oh-my-zsh"
 fi
-
-# Remove nvm if present (replaced by fnm)
 if [ -d "$HOME/.nvm" ]; then
     rm -rf "$HOME/.nvm"
-    echo -e "${GREEN}Removed${NC} ~/.nvm (replaced by fnm)"
-fi
-
-# Add ZSH plugin sourcing and dotfiles to .zshrc if not already present
-if ! grep -q "source \$HOME/.dotfiles/zsh/aliases.zsh" "$HOME/.zshrc" 2>/dev/null; then
-    cat >> "$HOME/.zshrc" << 'EOL'
-
-# ZSH plugins (autosuggestions, syntax highlighting, completions)
-ZSH_PLUGINS="$HOME/.zsh/plugins"
-[ -f "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh"
-[ -f "$ZSH_PLUGINS/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh" ] && source "$ZSH_PLUGINS/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
-[ -d "$ZSH_PLUGINS/zsh-completions/src" ] && fpath=("$ZSH_PLUGINS/zsh-completions/src" $fpath)
-
-# Initialize completions
-autoload -Uz compinit && compinit
-
-# Added by dotfiles installer
-source $HOME/.dotfiles/zsh/aliases.zsh
-source $HOME/.dotfiles/zsh/key-bindings.zsh
-source $HOME/.dotfiles/zsh/integrations.zsh
-# Set forge as default directory
-if [[ "$PWD" == "$HOME" && -z "$NVIM_SESSION" ]]; then
-  builtin cd ~/forge
-fi
-# Zoxide must be last
-eval "$(zoxide init zsh)"
-EOL
-    echo -e "${GREEN}Added${NC} plugin sourcing and dotfiles to ~/.zshrc"
-else
-    echo -e "${YELLOW}Source lines already exist${NC} in ~/.zshrc"
+    echo -e "${GREEN}Removed${NC} ~/.nvm (replaced by mise)"
 fi
 
 # -------- Starship Configuration --------
