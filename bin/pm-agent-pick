@@ -11,7 +11,7 @@ FD="$(command -v fdfind 2>/dev/null || command -v fd 2>/dev/null || echo find)"
 last="$(agent_last)"
 
 list() {
-	[ -d "$PM/.git" ] && printf '%s\n' "$PM"
+	printf '%s\n' "$PM"
 	command -v zoxide >/dev/null 2>&1 && zoxide query -l 2>/dev/null
 }
 

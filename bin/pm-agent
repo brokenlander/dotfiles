@@ -37,14 +37,7 @@ agent_valid "$AGENT_ID" || die "unknown agent $AGENT_ID (known: $PM_AGENTS)"
 WS="${PM_WS:-$HOME/forge/privatemind}"
 REPOS="${PM_REPOS:-app gateway app-db gateway-db helm}"
 RECENT_SECS=$((48 * 3600))
-# The PrivateMind workspace is only needed for its AgentN slots; an agent in any
-# other folder works without it (e.g. on a machine without the checkout).
-need_ws() { [ -d "$WS/.git" ] || die "$WS is not the workspace checkout"; }
-if [ "$mode" = run ]; then
-	case "${TARGET:-}" in
-	"" | "$WS" | "$WS/") need_ws ;;
-	esac
-fi
+[ -d "$WS/.git" ] || die "$WS is not the workspace checkout"
 
 launch_session() {  # cwd  brief  session  [slot]  [command]
 	_cwd="$1"; _brief="$2"; _sess="$3"; _slot="${4:-}"; _cmd="${5:-}"
@@ -209,7 +202,6 @@ if [ "$mode" = reset ] || [ "$mode" = restart ]; then
 	elif [ -n "$rdir" ]; then
 		say "resetting $rs (Agent$rslot): fresh main, fresh conversation…"
 		tmux kill-session -t "$rid" 2>/dev/null
-		need_ws
 		prep_slot "$rslot"
 		write_brief "$rslot" "$rdir" "$rs"
 		launch_session "$WS" "$rdir/.agent-brief" "$rs" "$rslot"
