@@ -57,6 +57,20 @@ hl.unbind("SUPER + CTRL + K")          -- herdr keybindings
 o.rebind("switch:on:Lid Switch", nil, os.getenv("HOME") .. "/dotfiles/omarchy/bin/lid close", { locked = true })
 o.rebind("switch:off:Lid Switch", nil, os.getenv("HOME") .. "/dotfiles/omarchy/bin/lid open", { locked = true })
 
+-- Super+F on a terminal: fill the screen without telling foot it is full screen.
+-- foot draws an opaque background when it knows it is full screen, which would
+-- drop the glass look; other apps get normal full screen.
+o.rebind("SUPER + F", "Full screen", function()
+  local w = hl.get_active_window()
+  local class = (w and w.class) or ""
+  if class == "foot" or class == "org.codeberg.dnkl.foot" then
+    local on = (w.fullscreen or 0) ~= 0
+    hl.dispatch(hl.dsp.window.fullscreen_state({ internal = on and 0 or 2, client = 0 }))
+  else
+    hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen" }))
+  end
+end)
+
 -- Passwords: Bitwarden instead of 1Password (same key as Omarchy's default).
 o.rebind("SUPER + SHIFT + SLASH", "Passwords", { launch = "bitwarden" })
 
