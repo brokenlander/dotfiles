@@ -3,8 +3,8 @@
 #
 # Why this exists: core.hooksPath precedence is local > global > system, so a
 # single repo-local core.hooksPath silently disables the whole global guard set.
-# That is exactly how an AI co-author trailer reached privatemind-app main on
-# 2026-09-03 while the identical message was blocked in privatemind-helm.
+# That is exactly how an AI co-author trailer once reached a work repo's main
+# branch while the identical message was blocked in a sibling repo.
 #
 # Belt and braces: the guards live in the global dir AND are symlinked into each
 # repo's own .git/hooks, so whichever path wins, the guard is present.

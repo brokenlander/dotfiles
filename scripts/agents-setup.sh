@@ -1,8 +1,8 @@
 #!/bin/bash
 # Agent workflow setup, shared by omarchy/install.sh and scripts/install.sh:
 #   1. agent-sidebar  (~/forge/agent-sidebar, built from its repo)
-#   2. pm-* tools      (~/dotfiles/bin, on PATH via shell/env.sh)
-#   3. tmux agent layer (tmux/agents.conf) + tmux-resurrect + Claude Code hooks
+#   2. agent tools     (~/forge/agent-sidebar/bin, on PATH via shell/env.sh)
+#   3. tmux agent layer (agent-sidebar tmux/agents.conf) + tmux-resurrect + Claude Code hooks
 # Safe to run again.
 set -euo pipefail
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -35,12 +35,19 @@ try:
 except (OSError, ValueError):
     s = {}
 hooks = s.setdefault("hooks", {})
+A = h + "/forge/agent-sidebar"
 want = [
-    ("SessionStart", h + "/dotfiles/bin/pm-board-hook"),
-    ("SessionStart", h + "/dotfiles/tmux/claude-pane-hook.sh"),
-    ("PostToolUse", h + "/dotfiles/bin/pm-board-hook"),
-    ("UserPromptSubmit", h + "/dotfiles/bin/pm-board hook"),
+    ("SessionStart", A + "/bin/agent-board-hook"),
+    ("SessionStart", A + "/tmux/claude-pane-hook.sh"),
+    ("PostToolUse", A + "/bin/agent-board-hook"),
+    ("UserPromptSubmit", A + "/bin/agent-board hook"),
 ]
+# Hooks from before the tools moved out of dotfiles
+old = {h + "/dotfiles/bin/pm-board-hook", h + "/dotfiles/tmux/claude-pane-hook.sh", h + "/dotfiles/bin/pm-board hook"}
+for event, rows in list(hooks.items()):
+    for r in rows:
+        r["hooks"] = [x for x in r.get("hooks", []) if x.get("command") not in old]
+    hooks[event] = [r for r in rows if r.get("hooks")]
 for event, cmd in want:
     rows = hooks.setdefault(event, [])
     if not any(x.get("command") == cmd for r in rows for x in r.get("hooks", [])):
@@ -50,13 +57,25 @@ json.dump(s, open(tmp, "w"), indent=2)
 os.replace(tmp, f)
 PY
 
-# The board briefing for Claude Code and opencode (same text herd installs)
+# The board briefing for Claude Code and opencode (agent-sidebar/briefing.md);
+# an older copy (it named the pm-* tools) is replaced
 for doc in "$HOME/.claude/CLAUDE.md" "$HOME/.config/opencode/AGENTS.md"; do
   mkdir -p "$(dirname "$doc")"
-  grep -qsF '<!-- herd -->' "$doc" || { [ -s "$doc" ] && printf '\n' >>"$doc"; cat "$DOTFILES/herd/briefing.md" >>"$doc"; }
+  if grep -qsF 'pm-board' "$doc"; then
+    python3 -I - "$doc" "$SIDEBAR/briefing.md" <<'PYB'
+import sys, re
+doc, new = open(sys.argv[1]).read(), open(sys.argv[2]).read()
+i = doc.find("## Other agents")
+if i >= 0:
+    j = doc.find("\n## ", i + 3)
+    doc = doc[:i] + new.rstrip("\n") + "\n" + (doc[j:] if j >= 0 else "")
+    open(sys.argv[1], "w").write(doc)
+PYB
+  fi
+  grep -qsF '<!-- herd -->' "$doc" || { [ -s "$doc" ] && printf '\n' >>"$doc"; cat "$SIDEBAR/briefing.md" >>"$doc"; }
 done
 
 # The Cyan persona, as a marked block at the top of the same file
 "$DOTFILES/claude/persona.sh" install || echo "persona: not installed, see above"
 
-echo "agent workflow ready: agent-sidebar, pm-* tools, tmux agent layer, Claude hooks, persona"
+echo "agent workflow ready: agent-sidebar, agent tools, tmux agent layer, Claude hooks, persona"

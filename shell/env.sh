@@ -1,8 +1,8 @@
 # Shared interactive shell setup (bash on Omarchy, zsh on Ubuntu).
 case $- in *i*) ;; *) return ;; esac
 
-# Personal tools: pm-* and friends, Go-installed tools (sesh, ...)
-for d in "$HOME/dotfiles/bin" "$HOME/go/bin"; do
+# Personal tools, the agent tools (agent-sidebar repo), Go-installed tools (sesh, ...)
+for d in "$HOME/dotfiles/bin" "$HOME/forge/agent-sidebar/bin" "$HOME/go/bin"; do
   case ":$PATH:" in *":$d:"*) ;; *) [ -d "$d" ] && PATH="$d:$PATH" ;; esac
 done
 export PATH

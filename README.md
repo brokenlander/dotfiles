@@ -246,7 +246,7 @@ dotfiles/
 ├── nvim/           # Neovim (Lazy.nvim, LSP, plugins)
 ├── zsh/            # Shared zshrc, key bindings, integrations
 ├── shell/          # Aliases + env shared by zsh/bash, Omarchy compat for Ubuntu
-├── tmux/           # Tmux base config + agent layer (agents.conf)
+├── tmux/           # Tmux base config (the agent layer comes from agent-sidebar)
 ├── git/            # config, ignore, work.gitconfig (linked into ~/.config/git/)
 ├── git-hooks/      # Global git hooks (block AI references in commits)
 ├── foot/           # foot terminal config (shared) + Ubuntu theme
@@ -279,12 +279,13 @@ dotfiles/
 - `Alt+h/j/k/l` switch panes (no prefix)
 - `Prefix+Ctrl+s` save session, `Prefix+Ctrl+r` restore
 - `Prefix+y` session picker (sesh), `Prefix+d` scratch popup, `Prefix+R` reload config
-- Agents (tmux/agents.conf): `Prefix+e` sidebar, `Prefix+u` agent picker, `Prefix+a` new agent,
+- Agents (agent-sidebar's tmux/agents.conf): `Prefix+e` sidebar, `Prefix+u` agent picker, `Prefix+a` new agent,
   `Prefix+q` end, `Prefix+r` reset, `Prefix+o` reopen, `Prefix+B` branch, `Prefix+b` board
 - Copy goes to the system clipboard (OSC 52); right-click pastes it (wl-paste)
 
 Base config (`tmux/.tmux.conf`) works anywhere; the agent layer loads only when
-`~/forge/agent-sidebar` and `~/dotfiles/bin/pm-agent` exist. `scripts/agents-setup.sh`
+agent-sidebar is installed (`~/forge/agent-sidebar`, which also holds the agent tools,
+the workspace/container install mode and the workflow guide, `docs/workflow.md`). `scripts/agents-setup.sh`
 installs agent-sidebar, tmux-resurrect (no TPM) and the Claude Code hooks on both machines.
 
 ### ZSH

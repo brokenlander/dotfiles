@@ -3,7 +3,7 @@
 
 [user]
 	name = brokenlander
-	email = andrea.moccia@gmail.com
+	email = 94259413+brokenlander@users.noreply.github.com
 
 # Work remotes switch to the corporate identity automatically.
 [includeIf "hasconfig:remote.*.url:https://**/options-it*/**"]
