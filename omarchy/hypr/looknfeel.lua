@@ -54,5 +54,6 @@
 --   },
 -- })
 
--- Terminals: a bit more see-through than Omarchy's 0.985/0.96 (active/inactive).
-o.transparent_window({ tag = "terminal" }, "0.92 0.88")
+-- Terminals: a bit more see-through than Omarchy's 0.985/0.96, and also in full screen
+-- (Hyprland draws full-screen windows opaque unless the rule gives a third value).
+o.transparent_window({ tag = "terminal" }, "0.92 0.88 0.92")  -- focused, unfocused, full screen
