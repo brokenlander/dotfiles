@@ -1,4 +1,4 @@
-# Per-machine OneDrive config (not in the dotfiles repo).
+# OneDrive client config, shared by both machines (the login token is never in the repo).
 sync_dir = "~/OneDrive"
 # Skip only the top-level Foto folder (~534 GB of photos).
 skip_dir = "Foto"
