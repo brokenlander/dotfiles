@@ -36,6 +36,7 @@ omarchy pkg add discord spotify bitwarden obs-studio
 omarchy pkg add lazydocker   # Docker TUI, Super+Shift+D
 omarchy pkg add dust duf glow rclone gping   # CLI tools, same as on Ubuntu
 omarchy pkg add kubectl k9s
+omarchy pkg add freerdp remmina   # RDP: FreeRDP engine + Remmina GUI
 # Sudoless Docker (docker group), like the workstation. Omarchy warns it equals
 # passwordless root; this setup already has passwordless sudo, so no extra exposure.
 id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"
