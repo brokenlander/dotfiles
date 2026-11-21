@@ -54,6 +54,8 @@
 --   },
 -- })
 
--- Terminals: a bit more see-through than Omarchy's 0.985/0.96, and also in full screen
--- (Hyprland draws full-screen windows opaque unless the rule gives a third value).
-o.transparent_window({ tag = "terminal" }, "0.92 0.88 0.92")  -- focused, unfocused, full screen
+-- Terminals: see-through background via Omarchy's "Glassy" windows mode
+-- (omarchy hyprland window transparency glassy, set by omarchy/install.sh): the
+-- terminal background goes see-through with frosted blur, text stays crisp, and
+-- it stays that way in full screen. No whole-window opacity rule here, because
+-- that would fade the text too.

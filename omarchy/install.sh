@@ -21,6 +21,8 @@ link() {
 
 # -------- Theme --------
 [ "$(omarchy theme current)" = "Ristretto" ] || omarchy theme set ristretto
+# Glassy windows: see-through terminal background with frosted blur, crisp text
+[ "$(omarchy hyprland window transparency)" = "glassy" ] || omarchy hyprland window transparency glassy
 
 # -------- Packages --------
 pacman -Q zen-browser-bin >/dev/null 2>&1 || omarchy install browser zen
