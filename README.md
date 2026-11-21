@@ -22,7 +22,7 @@ cd ~/dotfiles
 ./scripts/install.sh
 ```
 
-This installs and configures everything portable: CLI tools, ZSH, Neovim, Tmux, Docker, Git, Starship, foot, Kate, KDE settings, fonts, Zen Browser, Vesktop, OnlyOffice, Spotify, Steam, Krohnkite, and more. Desktop packages are auto-skipped on headless servers.
+This installs and configures everything portable: CLI tools, ZSH, Neovim, Tmux, Docker, Git, Starship, foot, Kate, KDE settings, fonts, Zen Browser, Discord, Bitwarden, Obsidian, LocalSend, OnlyOffice, Spotify, Steam, Krohnkite, and more. Desktop packages are auto-skipped on headless servers.
 
 ### 3. Workstation (this machine only)
 
@@ -187,11 +187,11 @@ Decided one by one on the laptop (Nov 2026). `omarchy/install.sh` applies it.
 | Category | Tools |
 |----------|-------|
 | Shell | ZSH + Starship prompt |
-| Editor | Neovim (30+ plugins, LSP, Mason, Treesitter) |
-| Multiplexer | Tmux (Tokyo Night, session persistence) |
-| Git | Delta pager, GitHub CLI integration, aliases |
+| Editor | Neovim (stock LazyVim) |
+| Multiplexer | Tmux (theme colours, session persistence, agent-sidebar + agent keys) |
+| Git | Identity per remote (personal / work), rebase pulls, aliases, commit guards |
 | CLI tools | bat, eza, fd, ripgrep, zoxide, delta, dust, btop, tldr, duf, difftastic |
-| Dev tools | lazygit, lazydocker, fzf, direnv, gh CLI |
+| Dev tools | lazygit, lazydocker, fzf, gh CLI, kubectl, k9s |
 | Runtimes | mise (Node.js and other versions, per-folder env), uv (Python), micromamba (conda, workstation), pipx |
 | Containers | Docker, Docker Compose |
 
@@ -205,9 +205,12 @@ Decided one by one on the laptop (Nov 2026). `omarchy/install.sh` applies it.
 | Krohnkite | Dynamic tiling for KWin |
 | JetBrains Mono Nerd Font | Terminal/editor font |
 | OnlyOffice | Office suite |
-| Vesktop | Discord client (Vencord) |
+| Discord | Chat (official app) |
+| Obsidian | Notes (vault in OneDrive) |
+| LocalSend | File sharing with the phone |
+| Pinta | Simple image editor |
 | Haruna | Video player |
-| KeePassXC | Password manager |
+| Bitwarden | Password manager |
 | Spotify | Music |
 | FreeRDP 3.33 (SDL3 client) | RDP, built from source with H.264 into `/opt/freerdp` by `scripts/build-freerdp.sh`. Ubuntu's FreeRDP has no H.264 and its X11/Wayland clients are legacy/deprecated; don't install Ubuntu's `freerdp-*` client packages. Bump `FREERDP_VERSION` to upgrade. |
 
@@ -238,8 +241,8 @@ dotfiles/
 ├── nvim/           # Neovim (Lazy.nvim, LSP, plugins)
 ├── zsh/            # Shared zshrc, key bindings, integrations
 ├── shell/          # Aliases + env shared by zsh/bash, Omarchy compat for Ubuntu
-├── tmux/           # Tmux config + Tokyo Night theme
-├── git/            # .gitconfig + .gitignore_global
+├── tmux/           # Tmux base config + agent layer (agents.conf)
+├── git/            # config, ignore, work.gitconfig (linked into ~/.config/git/)
 ├── git-hooks/      # Global git hooks (block AI references in commits)
 ├── foot/           # foot terminal config (shared) + Ubuntu theme
 ├── kate/           # Kate editor theme
