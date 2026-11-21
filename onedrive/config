@@ -3,3 +3,7 @@ sync_dir = "~/OneDrive"
 # Skip only the top-level Foto folder (~534 GB of photos).
 skip_dir = "Foto"
 skip_dir_strict_match = "true"
+
+# Never sync: temp/lock files (the client's defaults) and Obsidian's per-machine
+# window layout, so two machines don't keep overwriting each other's open panes.
+skip_file = "~*|.~*|*.tmp|*.swp|*.partial|workspace.json|workspace-mobile.json"
