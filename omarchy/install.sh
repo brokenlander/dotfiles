@@ -62,6 +62,24 @@ rm -rf "$HOME/.config/herdr"   # herdr: replaced by tmux + agent-sidebar
 # Tailscale (asks you to log in through a link the first time)
 pacman -Q tailscale >/dev/null 2>&1 || omarchy install service tailscale
 
+# Remote access over Tailscale: Tailscale SSH (tailnet devices only), and Sunshine
+# for Moonlight, installed but NOT started at login (sunshine-on / sunshine-off).
+tailscale set --ssh || true
+pacman -Q sunshine >/dev/null 2>&1 || omarchy pkg add sunshine
+systemctl --user disable --now app-dev.lizardbyte.app.Sunshine >/dev/null 2>&1 || true
+if command -v ufw >/dev/null; then   # same ports as Omarchy's installer: home LAN + Tailscale
+  for spec in "tcp 47984 47989 48010" "udp 5353 47998 47999 48000 48002 48010"; do
+    set -- $spec; proto=$1; shift
+    for port in "$@"; do
+      for cidr in 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16; do
+        sudo ufw allow from "$cidr" to any port "$port" proto "$proto" comment omarchy-sunshine >/dev/null
+      done
+      ip link show tailscale0 >/dev/null 2>&1 && sudo ufw allow in on tailscale0 to any port "$port" proto "$proto" comment omarchy-sunshine >/dev/null
+    done
+  done
+  sudo ufw reload >/dev/null
+fi
+
 # -------- Shell --------
 mkdir -p "$HOME/forge"
 if ! grep -q 'dotfiles/shell/aliases.sh' "$HOME/.bashrc"; then

@@ -18,5 +18,9 @@ alias cldc='claude --dangerously-skip-permissions --continue'
 alias cldd='claude --dangerously-skip-permissions --channels plugin:discord@claude-plugins-official'
 alias clddc='claude --dangerously-skip-permissions --channels plugin:discord@claude-plugins-official --continue'
 
+# Sunshine (remote screen for Moonlight), started only on demand; works over SSH too
+alias sunshine-on='systemctl --user start app-dev.lizardbyte.app.Sunshine'
+alias sunshine-off='systemctl --user stop app-dev.lizardbyte.app.Sunshine'
+
 # micromamba only where it exists (workstation)
 command -v micromamba >/dev/null 2>&1 && alias mm='micromamba'

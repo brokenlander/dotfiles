@@ -127,6 +127,10 @@ Manual afterwards:
 - Steam (UI only, once): Settings → Compatibility → turn on **"Enable Steam Play for all
   other titles"** and pick the latest Proton, so Windows-only games run. Per game, for the
   overlay and performance mode: Properties → Launch options `gamemoderun mangohud %command%`.
+- Remote access (over Tailscale): `ssh brokenlander@ebon` from any Tailscale device
+  (Tailscale SSH; no open SSH port). For the screen: `sunshine-on` (also over SSH), connect
+  with Moonlight, `sunshine-off` when done. First time: set its login at
+  https://localhost:47990 and pair the device there (PIN). Sunshine never starts by itself.
 - Web apps: only WhatsApp is kept. Some Omarchy installers add one back
   (Tailscale adds its admin page); run `~/dotfiles/omarchy/remove-webapps.sh` afterwards.
 - OneDrive: `onedrive` (log in). The config skips only the top-level `Foto`
