@@ -100,7 +100,7 @@ link zsh/zshrc "$HOME/.zshrc"
 
 # -------- Terminal + prompt --------
 link foot/foot.ini "$HOME/.config/foot/foot.ini"
-ln -sfn "$HOME/.local/state/omarchy/current/theme/foot.ini" "$HOME/.config/foot/theme.ini"
+ln -sfn "$DOTFILES/omarchy/foot-theme.ini" "$HOME/.config/foot/theme.ini"   # Omarchy theme + 20% glass background
 link starship/starship.toml "$HOME/.config/starship.toml"
 
 # -------- Git --------

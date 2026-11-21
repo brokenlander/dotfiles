@@ -41,6 +41,10 @@ fi
 # Terminals started from here (tmux, nvim :terminal) should get zsh too.
 export SHELL="${commands[zsh]:-$SHELL}"
 
+# -------- Completion (before anything that registers completions, e.g. kubectl) --------
+[ -d "$HOME/.zsh/plugins/zsh-completions/src" ] && fpath=("$HOME/.zsh/plugins/zsh-completions/src" $fpath)
+autoload -Uz compinit && compinit
+
 # -------- Shared shell setup --------
 source "$DOTFILES/shell/aliases.sh"
 source "$DOTFILES/shell/env.sh"
@@ -49,8 +53,6 @@ source "$DOTFILES/zsh/integrations.zsh"
 
 # -------- Plugins (cloned by shell/install-zsh-plugins.sh) --------
 ZSH_PLUGINS="$HOME/.zsh/plugins"
-[ -d "$ZSH_PLUGINS/zsh-completions/src" ] && fpath=("$ZSH_PLUGINS/zsh-completions/src" $fpath)
-autoload -Uz compinit && compinit
 [ -f "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$ZSH_PLUGINS/zsh-autosuggestions/zsh-autosuggestions.zsh"
 [ -f "$ZSH_PLUGINS/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh" ] && source "$ZSH_PLUGINS/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
 
