@@ -56,4 +56,7 @@ for doc in "$HOME/.claude/CLAUDE.md" "$HOME/.config/opencode/AGENTS.md"; do
   grep -qsF '<!-- herd -->' "$doc" || { [ -s "$doc" ] && printf '\n' >>"$doc"; cat "$DOTFILES/herd/briefing.md" >>"$doc"; }
 done
 
-echo "agent workflow ready: agent-sidebar, pm-* tools, tmux agent layer, Claude hooks"
+# The Cyan persona, as a marked block at the top of the same file
+"$DOTFILES/claude/persona.sh" install || echo "persona: not installed, see above"
+
+echo "agent workflow ready: agent-sidebar, pm-* tools, tmux agent layer, Claude hooks, persona"

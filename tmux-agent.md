@@ -7,7 +7,8 @@ them, ending and resetting them, and bringing them back after a tmux restart.
 |---|---|---|
 | tmux config and scripts | `~/dotfiles/tmux/`, `~/dotfiles/bin/` | `brokenlander/dotfiles` (public) |
 | sidebar (C) | `~/forge/agent-sidebar/` | `brokenlander/agent-sidebar` (public) |
-| Claude settings, theme, statusline, persona | `~/.claude/` | none, local only |
+| persona (Cyan) | `claude/persona.md`, kept at the top of `~/.claude/CLAUDE.md` by `claude/persona.sh` | `brokenlander/dotfiles` |
+| Claude settings, theme, statusline | `~/.claude/` | none, local only |
 
 Commits to both repos go out as
 `brokenlander <94259413+brokenlander@users.noreply.github.com>`. No AI
