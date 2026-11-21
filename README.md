@@ -140,6 +140,7 @@ Manual afterwards:
   onedrive --sync --single-directory 'Struttura' --resync --resync-auth   # minutes
   onedrive --sync --resync --resync-auth                                  # full, leave overnight
   ```
+  Then keep it syncing in the background: `systemctl --user enable --now onedrive`
 
 ### Omarchy apps: what stays and what goes
 

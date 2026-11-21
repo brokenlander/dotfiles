@@ -168,6 +168,8 @@ BM="$HOME/.config/gtk-3.0/bookmarks"; mkdir -p "$(dirname "$BM")"; touch "$BM"
 grep -q "file://$HOME/forge " "$BM" || echo "file://$HOME/forge forge" >> "$BM"
 grep -q "file://$HOME/OneDrive " "$BM" || echo "file://$HOME/OneDrive OneDrive" >> "$BM"
 link onedrive/config "$HOME/.config/onedrive/config"
+# Background sync, once logged in (otherwise: README > Omarchy > OneDrive)
+[ -s "$HOME/.config/onedrive/refresh_token" ] && systemctl --user enable onedrive >/dev/null 2>&1 || true
 
 # -------- Web apps (LAST: installers above, e.g. Tailscale, add their own) --------
 "$DOTFILES/omarchy/remove-webapps.sh"
