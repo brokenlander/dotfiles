@@ -46,6 +46,11 @@ The `? shortcuts` row in the sidebar shows the same keys in two groups.
 Pickers share `tmux/fzf-theme.sh` and open with `display-popup -B`. The status
 bar forks nothing: no `#()` anywhere in a format.
 
+Everything drawn in tmux takes its colours from the terminal palette, so it
+follows the terminal's theme (Ristretto in foot). The bar keeps its rounded
+pills. Their Nerd Font glyphs are `\u` escapes in `.tmux.conf`, because an
+editor once dropped the raw characters. `sh tests/tmux-theme.sh` checks all of it.
+
 ## Sidebar
 
 `agent-sidebar` is an inotify-driven C program shown as a 28-column pane in
@@ -202,8 +207,9 @@ restarts any board left on a bare shell.
 ## Claude settings
 
 - `statusline.sh`: `<model> · <dir> · <branch> · <ctx%>`, with the model
-  shown under an alias set at the top of the file.
-- `themes/cyan.json`, used as `"theme": "custom:cyan"`. The bypass-permissions
+  shown under an alias set at the top of the file, in palette colours.
+- `themes/cyan.json`, used as `"theme": "custom:cyan"`: base `dark-ansi` with
+  `ansi:` overrides, so the agent UI follows the palette too. The bypass-permissions
   footer takes the `error` colour. `~/.claude/themes/` must exist when the CLI
   starts.
 - `settings.json` hooks: `tmux/claude-pane-hook.sh` (tags the pane),
